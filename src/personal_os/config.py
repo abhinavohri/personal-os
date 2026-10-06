@@ -26,8 +26,19 @@ class VertexConfig(BaseModel):
 class NotionConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
+    root_page_id: str = Field(min_length=1)
     agent_brief_page_id: str = Field(min_length=1)
+    profile_page_id: str = Field(min_length=1)
+    spine_page_id: str = Field(min_length=1)
+    interests_and_lanes_page_id: str = Field(min_length=1)
+    current_week_page_id: str = Field(min_length=1)
+    archive_page_id: str = Field(min_length=1)
     notes_inbox_data_source_id: str = Field(min_length=1)
+    roadmap_data_source_id: str = Field(min_length=1)
+    resources_data_source_id: str = Field(min_length=1)
+    repository_catalog_data_source_id: str = Field(min_length=1)
+    decisions_data_source_id: str = Field(min_length=1)
+    weekly_reviews_data_source_id: str = Field(min_length=1)
     notes_title_property: str = "Name"
 
 

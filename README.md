@@ -96,6 +96,8 @@ After filling `config/system.yaml`, verify Vertex inference and grounded search:
 ```bash
 uv run python scripts/verify_vertex.py
 uv run python scripts/verify_gcs.py
+uv run python scripts/bootstrap_notion.py
+uv run python scripts/verify_notion.py
 ```
 
 Then:

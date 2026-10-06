@@ -15,10 +15,16 @@ vertex:
 notion:
   root_page_id: replace-me
   agent_brief_page_id: replace-me
+  profile_page_id: replace-me
+  spine_page_id: replace-me
+  interests_and_lanes_page_id: replace-me
+  current_week_page_id: replace-me
+  archive_page_id: replace-me
   notes_title_property: Name
   notes_inbox_data_source_id: replace-me
   roadmap_data_source_id: replace-me
   resources_data_source_id: replace-me
+  repository_catalog_data_source_id: replace-me
   decisions_data_source_id: replace-me
   weekly_reviews_data_source_id: replace-me
 
