@@ -98,6 +98,9 @@ uv run python scripts/verify_vertex.py
 uv run python scripts/verify_gcs.py
 uv run python scripts/bootstrap_notion.py
 uv run python scripts/verify_notion.py
+uv run python scripts/bootstrap_todoist.py
+# Put the printed project_id in config/system.yaml, then:
+uv run python scripts/verify_todoist.py
 ```
 
 Then:
@@ -111,7 +114,8 @@ Then:
    grounding and does not need a second search API key.
 5. Create the Notion structure described in `docs/ARCHITECTURE.md` and share
    only that root page with the Notion integration.
-6. Create a dedicated Todoist project.
+6. Create the dedicated Todoist project with `bootstrap_todoist.py`, save the
+   printed ID in `config/system.yaml`, and verify it with `verify_todoist.py`.
 7. Deploy the private bucket, uploader, and note processor.
 8. Run the personal interview and approve the first spine, lanes, and roadmap.
 9. Rehearse the weekly loop with test data before scheduling it.
