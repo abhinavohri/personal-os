@@ -91,6 +91,12 @@ gcloud auth application-default login
 gh auth login
 ```
 
+After filling `config/system.yaml`, verify Vertex inference and grounded search:
+
+```bash
+uv run python scripts/verify_vertex.py
+```
+
 Then:
 
 1. Put only secrets in `.env`; never commit it.

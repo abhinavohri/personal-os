@@ -12,6 +12,8 @@ def test_example_configuration_matches_runtime_schema() -> None:
     config = PersonalOSConfig.from_yaml(root / "config/system.example.yaml")
 
     assert config.web_search.provider == "vertex_google_search"
+    assert config.vertex.location == "global"
+    assert config.vertex.routine_model == "gemini-3.5-flash-lite"
     assert config.notion.notes_inbox_data_source_id == "replace-me"
     assert config.github.allowed_repositories == ()
 

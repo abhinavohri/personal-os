@@ -8,8 +8,9 @@ gcp:
   paper_notes_bucket: replace-me
 
 vertex:
-  routine_model: select-an-available-flash-model
-  deep_reasoning_model: select-an-available-pro-model
+  location: global
+  routine_model: gemini-3.5-flash-lite
+  deep_reasoning_model: gemini-3.8-flash
 
 notion:
   root_page_id: replace-me
@@ -36,7 +37,7 @@ github:
 
 web_search:
   provider: vertex_google_search
-  model: select-an-available-flash-model
+  model: gemini-3.5-flash-lite
 
 planning:
   max_core_tasks_per_day: 2

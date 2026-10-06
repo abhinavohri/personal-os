@@ -51,12 +51,12 @@ def build_adapters(config: PersonalOSConfig, secrets: RuntimeSecrets) -> Adapter
         ),
         llm=VertexStructuredLLM(
             config.gcp.project_id,
-            config.gcp.region,
+            config.vertex.location,
             config.vertex.routine_model,
         ),
         web_search=VertexGoogleSearch(
             config.gcp.project_id,
-            config.gcp.region,
+            config.vertex.location,
             config.web_search.model,
         ),
     )

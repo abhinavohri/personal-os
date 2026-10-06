@@ -18,6 +18,7 @@ class GCPConfig(BaseModel):
 class VertexConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
+    location: str = Field(min_length=1)
     routine_model: str = Field(min_length=1)
     deep_reasoning_model: str = Field(min_length=1)
 

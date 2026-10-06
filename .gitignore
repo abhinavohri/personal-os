@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+config/system.yaml
 
 # Credentials and secrets
 *.pem
