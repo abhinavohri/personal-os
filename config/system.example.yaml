@@ -35,7 +35,8 @@ github:
     include_releases: true
 
 web_search:
-  provider: replace-me
+  provider: vertex_google_search
+  model: select-an-available-flash-model
 
 planning:
   max_core_tasks_per_day: 2
