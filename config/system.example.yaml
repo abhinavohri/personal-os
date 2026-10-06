@@ -1,0 +1,54 @@
+system:
+  name: personal-os
+  timezone: Asia/Kolkata
+
+gcp:
+  project_id: replace-me
+  region: us-central1
+  paper_notes_bucket: replace-me
+
+vertex:
+  routine_model: select-an-available-flash-model
+  deep_reasoning_model: select-an-available-pro-model
+
+notion:
+  root_page_id: replace-me
+  agent_brief_page_id: replace-me
+  notes_inbox_database_id: replace-me
+  roadmap_database_id: replace-me
+  resources_database_id: replace-me
+  decisions_database_id: replace-me
+  weekly_reviews_database_id: replace-me
+
+todoist:
+  project_id: replace-me
+
+github:
+  username: replace-me
+  auth: gh_cli
+  include_private_repositories: false
+  allowed_repositories: []
+  activity:
+    include_commits: true
+    include_pull_requests: true
+    include_issues: true
+    include_releases: true
+
+web_search:
+  provider: replace-me
+
+planning:
+  max_core_tasks_per_day: 2
+  max_optional_tasks_per_day: 1
+  lanes:
+    - build
+    - reading
+    - open
+    - parking_lot
+
+approval:
+  extracted_tasks: required
+  low_confidence_handwriting: required
+  material_roadmap_changes: required
+  github_write_actions: required
+  routine_progress_updates: optional

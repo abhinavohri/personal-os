@@ -1,8 +1,36 @@
-.DS_Store
 .env
+.env.*
+!.env.example
+
+# Credentials and secrets
+*.pem
+*.key
+*service-account*.json
+credentials*.json
+secrets/
+
+# Personal data must never enter Git
+data/
+scans/
+personal-notes/
+exports/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# JavaScript
 node_modules/
 dist/
-__pycache__/
-.pytest_cache/
-*.pyc
-postgres_data/
+
+# Infrastructure state
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Local tooling
+.DS_Store
+.idea/
+.vscode/

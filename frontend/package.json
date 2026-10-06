@@ -1,7 +1,0 @@
-{
-  "name":"pagecraft-web","private":true,"version":"1.0.0","type":"module",
-  "scripts":{"dev":"vite","build":"tsc -b && vite build","test":"vitest run"},
-  "dependencies":{"@vitejs/plugin-react":"latest","vite":"latest","typescript":"latest","react":"latest","react-dom":"latest","lucide-react":"latest"},
-  "devDependencies":{"@testing-library/react":"latest","@types/react":"latest","@types/react-dom":"latest","jsdom":"latest","vitest":"latest"},
-  "vitest":{"environment":"jsdom"}
-}

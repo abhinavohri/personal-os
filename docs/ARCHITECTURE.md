@@ -1,30 +1,119 @@
 # Architecture
 
-## Boundaries
+## Product boundary
 
-- `frontend`: React/TypeScript single-page application. Rendering, local interaction state, accessibility, and optimistic feedback.
-- `backend`: FastAPI application. Curriculum delivery, authoritative answer validation, session scoring, unlock rules, streaks, and progress.
-- `db`: PostgreSQL. Curriculum snapshots, learner state, attempts, sessions, mastery, and achievements.
+Personal OS is an orchestration layer, not a replacement for every tool. Each
+system has one clear responsibility and one authoritative data type.
 
-Curriculum ships as versioned Python seed data for reviewability. The API exposes a stable JSON contract and never sends correct-answer keys in lesson payloads. A single local learner is created lazily from the browser-generated UUID.
+| System | Responsibility | Authoritative data |
+| --- | --- | --- |
+| Hermes | Conversation, orchestration, review loops | No unique durable data |
+| Vertex AI | Reasoning and multimodal extraction | No durable user state |
+| Cloud Storage | Original paper notes and extraction artifacts | Raw scans |
+| Notion | Roadmap and durable agent memory | Goals, decisions, reviews |
+| Todoist | Daily execution | Task status and completion |
+| GitHub | Work evidence and repository context | Source history, PRs, issues |
+| This repository | Implementation and configuration | Code and schemas |
 
-## Data model
+## User experience
 
-- learners: identity, XP, streak, last-active date, daily goal.
-- lesson_progress: state, best score, attempts, completion and mastery.
-- lesson_sessions: resumable run, current position, hearts, score, status.
-- exercise_attempts: supplied answer, correctness, attempt number, feedback.
+The user should normally interact with only three surfaces:
 
-Curriculum definitions are currently code-owned and versioned. This avoids premature CMS complexity while preserving an obvious migration to database-authored content later.
+1. Hermes for planning, questions, approvals, and reviews.
+2. Todoist for today's executable tasks.
+3. A physical notebook for thinking and learning.
 
-## API
+Notion is a backstage control center. It is available for inspection and manual
+editing but should not require daily attention.
 
-- `GET /health`
-- `GET /api/course?learner_id=...`
-- `GET /api/dashboard?learner_id=...`
-- `POST /api/lessons/{slug}/sessions`
-- `GET /api/sessions/{id}`
-- `POST /api/sessions/{id}/answer`
-- `GET /api/progress?learner_id=...`
+## Note ingestion
 
-The answer endpoint is idempotent per session position: repeated submissions after a correct answer return the accepted result without awarding XP twice.
+```text
+Phone scan
+  -> authenticated uploader
+  -> gs://<bucket>/inbox/<date>/<object>
+  -> object-finalized event
+  -> note processor
+  -> Vertex AI structured extraction
+  -> extracted JSON/Markdown in Cloud Storage
+  -> draft item in Notion Notes Inbox
+  -> user approval in Hermes
+  -> durable memory, roadmap update, or Todoist task
+```
+
+Unclear handwriting must be flagged. The system must retain the original scan
+and must not silently convert low-confidence text into tasks or durable memory.
+
+## Notion structure
+
+```text
+Personal OS
+├── Agent Brief
+├── Profile and Constraints
+├── Spine
+├── Interests and Lanes
+├── Roadmap
+├── Current Week
+├── Notes Inbox
+├── Resources
+├── Repository Catalog
+├── Decision Log
+├── Weekly Reviews
+└── Archive
+```
+
+The Agent Brief is the small session-start document. It points to deeper data
+without forcing Hermes to load the entire workspace on every interaction.
+
+## Planning model
+
+- **Spine:** the central outcome connecting multiple interests.
+- **Build:** the primary active interest receiving most effort.
+- **Reading:** one slow-moving study track.
+- **Open:** one bounded exploratory side quest.
+- **Parking Lot:** preserved interests that are not active.
+
+The Notion roadmap contains outcomes and milestones. Todoist contains only the
+small actions required now.
+
+## GitHub as work evidence
+
+GitHub supplements the resume and self-reported progress with concrete work.
+Hermes maintains a Notion Repository Catalog containing only explicitly
+allowlisted repositories and their relevance to the roadmap.
+
+Read-only collection can include repository metadata, README files, languages,
+commits, pull requests, issues, releases, and contribution activity. The weekly
+review uses those signals to describe progress, identify neglected projects,
+and propose maintenance work.
+
+GitHub is not the source of strategic truth; Notion remains authoritative for
+goals and roadmap state. GitHub write actions—including pushes, issues, pull
+requests, merges, and repository settings—require explicit user approval.
+
+## Model roles
+
+- A cost-efficient Vertex AI model handles extraction, classification,
+  summaries, and routine planning.
+- A stronger reasoning model handles the initial interview, spine creation,
+  difficult tradeoffs, and weekly roadmap restructuring.
+- Exact model identifiers remain configuration, because Vertex availability
+  changes over time.
+
+## Scheduled review
+
+The weekly job gathers completed and missed Todoist tasks, allowlisted GitHub
+activity, processed notes, roadmap state, and recent decisions. Hermes drafts a
+review and a proposed next week. Material roadmap changes and newly extracted
+tasks require user approval.
+
+## Security boundaries
+
+- Enforce public-access prevention and uniform bucket-level access on GCS.
+- Prefer Application Default Credentials over long-lived service-account keys.
+- Give each service account the minimum bucket and Vertex permissions required.
+- Keep secrets, personal exports, and scans outside Git.
+- Start GitHub access read-only, exclude private repositories by default, and
+  use an explicit repository allowlist.
+- Never place an expiring signed URL into durable Notion memory; store the GCS
+  object identifier and mint access only when requested.

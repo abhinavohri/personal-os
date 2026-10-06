@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://personal-os.local/schemas/extracted-note.schema.json",
+  "title": "Extracted paper note",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_object",
+    "transcription",
+    "summary",
+    "confidence",
+    "tasks",
+    "insights",
+    "questions",
+    "resources",
+    "uncertainties"
+  ],
+  "properties": {
+    "source_object": { "type": "string", "minLength": 1 },
+    "page_date": { "type": ["string", "null"], "format": "date" },
+    "title": { "type": ["string", "null"] },
+    "transcription": { "type": "string" },
+    "summary": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "explicit_due_date"],
+        "properties": {
+          "text": { "type": "string", "minLength": 1 },
+          "explicit_due_date": {
+            "type": ["string", "null"],
+            "format": "date"
+          }
+        }
+      }
+    },
+    "insights": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "questions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "resources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "diagrams": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "contains_sensitive_content": { "type": "boolean", "default": false }
+  }
+}
