@@ -1,0 +1,25 @@
+"""Provider-neutral object storage contracts."""
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Protocol
+
+
+@dataclass(frozen=True)
+class StoredObject:
+    """Metadata for an object without loading its contents."""
+
+    uri: str
+    size: int | None = None
+    content_type: str | None = None
+    updated_at: datetime | None = None
+
+
+class ObjectStore(Protocol):
+    """Small storage surface needed by the note ingestion workflow."""
+
+    def stat(self, uri: str) -> StoredObject: ...
+
+    def put_bytes(self, uri: str, data: bytes, content_type: str) -> StoredObject: ...
+
+    def copy(self, source_uri: str, destination_uri: str) -> StoredObject: ...
