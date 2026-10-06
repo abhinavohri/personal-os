@@ -77,7 +77,6 @@ You need:
 - A Notion workspace and internal integration.
 - A Todoist account and API token.
 - A GitHub account authenticated through the `gh` CLI or a narrowly scoped app.
-- A supported Hermes web-search backend.
 - Hermes Agent, Git, Google Cloud CLI, and the GitHub CLI on the host machine.
 
 ### Local configuration
@@ -87,6 +86,7 @@ git clone git@github.com:abhinavohri/personal-os.git
 cd personal-os
 cp .env.example .env
 cp config/system.example.yaml config/system.yaml
+uv sync
 gcloud auth application-default login
 gh auth login
 ```
@@ -94,19 +94,28 @@ gh auth login
 Then:
 
 1. Put only secrets in `.env`; never commit it.
-2. Add project IDs, database IDs, model choices, and the GitHub repository
+2. Add project IDs, Notion data source IDs, model choices, and the GitHub repository
    allowlist to `config/system.yaml`.
-3. Configure Hermes to use Vertex AI and the selected web-search backend.
-4. Create the Notion structure described in `docs/ARCHITECTURE.md` and share
+3. Export `GITHUB_TOKEN="$(gh auth token)"` and load the other values from
+   `.env` into your shell or deployment secret manager.
+4. Configure Hermes to use Vertex AI; web research uses Vertex AI Google Search
+   grounding and does not need a second search API key.
+5. Create the Notion structure described in `docs/ARCHITECTURE.md` and share
    only that root page with the Notion integration.
-5. Create a dedicated Todoist project.
-6. Deploy the private bucket, uploader, and note processor.
-7. Run the personal interview and approve the first spine, lanes, and roadmap.
-8. Rehearse the weekly loop with test data before scheduling it.
+6. Create a dedicated Todoist project.
+7. Deploy the private bucket, uploader, and note processor.
+8. Run the personal interview and approve the first spine, lanes, and roadmap.
+9. Rehearse the weekly loop with test data before scheduling it.
 
-Exact deployment commands will be added as the infrastructure and services are
-implemented. The repository is currently an architecture scaffold, not yet a
-runnable release.
+The provider adapters and their configuration boundary are implemented and
+covered by mocked contract tests. Deployment, Hermes tool registration, the
+mobile uploader, event handler, and end-to-end workflows remain to be built.
+
+Application code loads non-secret provider settings with
+`PersonalOSConfig.from_yaml("config/system.yaml")`, loads tokens with
+`RuntimeSecrets.from_environment(os.environ)`, and passes both to
+`build_adapters(...)`. This produces the GCS, Notion, Todoist, GitHub, Vertex
+inference, and grounded-search clients without coupling workflows to vendors.
 
 ## Security and cost defaults
 
@@ -121,8 +130,8 @@ runnable release.
 - Configure Google Cloud budgets and alerts before scheduled processing.
 
 Notion, Todoist, and Hermes can be used without separate subscription charges.
-Vertex AI, Cloud Storage beyond the free allowance, and some search providers
-may incur usage-based costs.
+Vertex AI—including grounded web searches—and Cloud Storage beyond the free
+allowance may incur usage-based costs.
 
 ## Repository layout
 
@@ -143,5 +152,7 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 
 ## Project status
 
-The design and safety boundaries are documented. Cloud resources, integrations,
-application code, and scheduled jobs have not yet been deployed.
+The design, safety boundaries, provider-neutral ports, and adapters for Vertex
+AI, grounded web search, GCS, Notion, Todoist, and read-only GitHub evidence are
+implemented. Cloud resources, Hermes tools, application workflows, and scheduled
+jobs have not yet been deployed.

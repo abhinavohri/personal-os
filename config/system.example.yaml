@@ -14,6 +14,7 @@ vertex:
 notion:
   root_page_id: replace-me
   agent_brief_page_id: replace-me
+  notes_title_property: Name
   notes_inbox_data_source_id: replace-me
   roadmap_data_source_id: replace-me
   resources_data_source_id: replace-me
@@ -25,7 +26,6 @@ todoist:
 
 github:
   username: replace-me
-  auth: gh_cli
   include_private_repositories: false
   allowed_repositories: []
   activity:
