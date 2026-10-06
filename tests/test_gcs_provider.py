@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from io import BytesIO
 
 import pytest
 
@@ -13,10 +14,26 @@ class FakeBlob:
         self.content_type = "image/jpeg"
         self.updated = datetime(2026, 10, 6, tzinfo=UTC)
         self.upload = None
+        self.metadata = None
 
     def upload_from_string(self, data: bytes, *, content_type: str) -> None:
         self.upload = (data, content_type)
         self.size = len(data)
+        self.content_type = content_type
+
+    def upload_from_file(
+        self,
+        file,
+        *,
+        rewind: bool,
+        size: int,
+        content_type: str,
+        if_generation_match: int,
+    ) -> None:
+        if rewind:
+            file.seek(0)
+        self.upload = (file.read(size), content_type, if_generation_match)
+        self.size = size
         self.content_type = content_type
 
     def reload(self) -> None:
@@ -67,6 +84,24 @@ def test_put_stat_and_copy() -> None:
     assert found.size == 4
     assert copied.uri == "gs://notes/processed/page.jpg"
     assert copied.content_type == "image/jpeg"
+
+
+def test_put_file_uses_create_only_precondition_and_metadata() -> None:
+    client = FakeClient()
+    store = GCSObjectStore("project", client=client)
+
+    written = store.put_file(
+        "gs://notes/inbox/page.png",
+        BytesIO(b"scan"),
+        size=4,
+        content_type="image/png",
+        metadata={"uploaded_by": "person@example.com"},
+    )
+
+    blob = client.bucket("notes").blob("inbox/page.png")
+    assert written.size == 4
+    assert blob.upload == (b"scan", "image/png", 0)
+    assert blob.metadata == {"uploaded_by": "person@example.com"}
 
 
 def test_stat_translates_missing_object() -> None:

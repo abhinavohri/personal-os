@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import BinaryIO, Mapping, Protocol
 
 
 @dataclass(frozen=True)
@@ -21,5 +21,15 @@ class ObjectStore(Protocol):
     def stat(self, uri: str) -> StoredObject: ...
 
     def put_bytes(self, uri: str, data: bytes, content_type: str) -> StoredObject: ...
+
+    def put_file(
+        self,
+        uri: str,
+        file: BinaryIO,
+        *,
+        size: int,
+        content_type: str,
+        metadata: Mapping[str, str] | None = None,
+    ) -> StoredObject: ...
 
     def copy(self, source_uri: str, destination_uri: str) -> StoredObject: ...

@@ -5,12 +5,16 @@ description = "Personal planning and memory orchestration"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "fastapi>=0.118,<1",
+  "google-auth>=2.40,<3",
   "google-genai>=1.50,<2",
   "google-cloud-storage>=3.4,<4",
   "httpx>=0.28,<1",
   "pydantic>=2.12,<3",
+  "python-multipart>=0.0.20,<1",
   "python-dotenv>=1.1,<2",
   "pyyaml>=6,<7",
+  "uvicorn>=0.37,<1",
 ]
 
 [dependency-groups]
@@ -23,5 +27,5 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]

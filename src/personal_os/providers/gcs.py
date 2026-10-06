@@ -1,7 +1,7 @@
 """Google Cloud Storage adapter."""
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, BinaryIO, Mapping
 from urllib.parse import urlparse
 
 from google.cloud import storage
@@ -49,6 +49,31 @@ class GCSObjectStore:
         try:
             blob = self._client.bucket(location.bucket).blob(location.object_name)
             blob.upload_from_string(data, content_type=content_type)
+            blob.reload()
+            return self._metadata(uri, blob)
+        except Exception as exc:
+            raise ObjectStoreError(f"Could not write object: {uri}") from exc
+
+    def put_file(
+        self,
+        uri: str,
+        file: BinaryIO,
+        *,
+        size: int,
+        content_type: str,
+        metadata: Mapping[str, str] | None = None,
+    ) -> StoredObject:
+        location = parse_gcs_uri(uri)
+        try:
+            blob = self._client.bucket(location.bucket).blob(location.object_name)
+            blob.metadata = dict(metadata or {})
+            blob.upload_from_file(
+                file,
+                rewind=True,
+                size=size,
+                content_type=content_type,
+                if_generation_match=0,
+            )
             blob.reload()
             return self._metadata(uri, blob)
         except Exception as exc:

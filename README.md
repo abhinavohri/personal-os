@@ -121,13 +121,15 @@ Then:
    printed ID in `config/system.yaml`, and verify it with `verify_todoist.py`.
 7. Add only the repositories you want the agent to read to the GitHub allowlist.
    Private repositories remain blocked unless you explicitly enable them.
-8. Deploy the private bucket, uploader, and note processor.
+8. Create a Google OAuth Web client, configure the uploader variables described
+   in `apps/uploader/README.md`, and deploy the uploader to Cloud Run.
 9. Run the personal interview and approve the first spine, lanes, and roadmap.
 10. Rehearse the weekly loop with test data before scheduling it.
 
-The provider adapters and their configuration boundary are implemented and
-covered by mocked contract tests. Deployment, Hermes tool registration, the
-mobile uploader, event handler, and end-to-end workflows remain to be built.
+The provider adapters, configuration boundary, and authenticated mobile scan
+uploader are implemented and covered by isolated tests. Deployment, Hermes tool
+registration, the note-processing event handler, and end-to-end workflows
+remain to be built.
 
 Application code loads non-secret provider settings with
 `PersonalOSConfig.from_yaml("config/system.yaml")`, loads tokens with
@@ -154,7 +156,7 @@ allowance may incur usage-based costs.
 ## Repository layout
 
 ```text
-apps/uploader/              Phone-friendly scan uploader
+apps/uploader/              Authenticated phone-friendly scan uploader
 services/note-processor/    Event-driven handwriting extraction
 config/                     Safe configuration templates
 infra/                      GCP infrastructure definitions
@@ -170,7 +172,7 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 
 ## Project status
 
-The design, safety boundaries, provider-neutral ports, and adapters for Vertex
-AI, grounded web search, GCS, Notion, Todoist, and read-only GitHub evidence are
-implemented. Cloud resources, Hermes tools, application workflows, and scheduled
-jobs have not yet been deployed.
+The design, safety boundaries, provider-neutral ports, adapters, and scan
+uploader are implemented. The bucket and external workspaces are configured;
+Cloud Run services, Hermes tools, note processing, and scheduled jobs have not
+yet been deployed.
