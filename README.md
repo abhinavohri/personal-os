@@ -95,6 +95,7 @@ After filling `config/system.yaml`, verify Vertex inference and grounded search:
 
 ```bash
 uv run python scripts/verify_vertex.py
+uv run python scripts/verify_gcs.py
 ```
 
 Then:
