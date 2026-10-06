@@ -52,6 +52,7 @@ class GitHubConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
     username: str = Field(min_length=1)
+    include_private_repositories: bool = False
     allowed_repositories: tuple[str, ...]
 
 

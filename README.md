@@ -101,6 +101,8 @@ uv run python scripts/verify_notion.py
 uv run python scripts/bootstrap_todoist.py
 # Put the printed project_id in config/system.yaml, then:
 uv run python scripts/verify_todoist.py
+# Add your GitHub username and exact owner/repository allowlist, then:
+uv run python scripts/verify_github.py
 ```
 
 Then:
@@ -116,9 +118,11 @@ Then:
    only that root page with the Notion integration.
 6. Create the dedicated Todoist project with `bootstrap_todoist.py`, save the
    printed ID in `config/system.yaml`, and verify it with `verify_todoist.py`.
-7. Deploy the private bucket, uploader, and note processor.
-8. Run the personal interview and approve the first spine, lanes, and roadmap.
-9. Rehearse the weekly loop with test data before scheduling it.
+7. Add only the repositories you want the agent to read to the GitHub allowlist.
+   Private repositories remain blocked unless you explicitly enable them.
+8. Deploy the private bucket, uploader, and note processor.
+9. Run the personal interview and approve the first spine, lanes, and roadmap.
+10. Rehearse the weekly loop with test data before scheduling it.
 
 The provider adapters and their configuration boundary are implemented and
 covered by mocked contract tests. Deployment, Hermes tool registration, the

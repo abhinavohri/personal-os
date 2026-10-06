@@ -48,6 +48,7 @@ def build_adapters(config: PersonalOSConfig, secrets: RuntimeSecrets) -> Adapter
             secrets.github_token,
             config.github.username,
             config.github.allowed_repositories,
+            allow_private=config.github.include_private_repositories,
         ),
         llm=VertexStructuredLLM(
             config.gcp.project_id,

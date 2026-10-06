@@ -35,7 +35,9 @@ def test_repository_metadata_is_normalized_and_versioned() -> None:
 
     async def run():
         client = _client(handler)
-        provider = GitHubWorkEvidence("token", "octocat", (REPO,), client=client)
+        provider = GitHubWorkEvidence(
+            "token", "octocat", (REPO,), allow_private=True, client=client
+        )
         result = await provider.get_repository(REPO)
         await client.aclose()
         return result
@@ -49,6 +51,19 @@ def test_repository_metadata_is_normalized_and_versioned() -> None:
 def test_recent_activity_combines_read_only_evidence() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
+        if path == f"/repos/{REPO}":
+            return httpx.Response(
+                200,
+                json={
+                    "full_name": REPO,
+                    "html_url": f"https://github.com/{REPO}",
+                    "description": "My system",
+                    "language": "Python",
+                    "topics": ["personal-os"],
+                    "private": False,
+                    "default_branch": "main",
+                },
+            )
         if path.endswith("/commits"):
             return httpx.Response(200, json=[_commit()])
         if path.endswith("/issues"):
@@ -83,6 +98,31 @@ def test_non_allowlisted_repository_is_rejected_without_http() -> None:
 
     asyncio.run(run())
     assert calls == []
+
+
+def test_private_repository_is_rejected_unless_enabled() -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "full_name": REPO,
+                "html_url": f"https://github.com/{REPO}",
+                "description": None,
+                "language": None,
+                "topics": [],
+                "private": True,
+                "default_branch": "main",
+            },
+        )
+
+    async def run():
+        client = _client(handler)
+        provider = GitHubWorkEvidence("token", "octocat", (REPO,), client=client)
+        with pytest.raises(GitHubEvidenceError, match="Private repository access"):
+            await provider.get_repository(REPO)
+        await client.aclose()
+
+    asyncio.run(run())
 
 
 def _client(handler) -> httpx.AsyncClient:

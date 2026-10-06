@@ -24,10 +24,12 @@ class GitHubWorkEvidence:
         username: str,
         allowed_repositories: tuple[str, ...],
         *,
+        allow_private: bool = False,
         client: httpx.AsyncClient | None = None,
     ) -> None:
         self._username = username
         self._allowed = frozenset(allowed_repositories)
+        self._allow_private = allow_private
         self._owner = client is None
         self._client = client or httpx.AsyncClient(
             base_url="https://api.github.com", timeout=30
@@ -43,6 +45,10 @@ class GitHubWorkEvidence:
     async def get_repository(self, full_name: str) -> RepositorySnapshot:
         self._check_allowed(full_name)
         body = await self._get(f"/repos/{full_name}")
+        if body.get("private", False) and not self._allow_private:
+            raise GitHubEvidenceError(
+                f"Private repository access is disabled: {full_name}"
+            )
         return RepositorySnapshot(
             full_name=body["full_name"],
             url=body["html_url"],
@@ -56,7 +62,7 @@ class GitHubWorkEvidence:
     async def recent_activity(
         self, full_name: str, since: datetime
     ) -> tuple[WorkEvent, ...]:
-        self._check_allowed(full_name)
+        await self.get_repository(full_name)
         since_text = _iso_z(since)
         commits = await self._get(
             f"/repos/{full_name}/commits",
