@@ -14,11 +14,11 @@ vertex:
 notion:
   root_page_id: replace-me
   agent_brief_page_id: replace-me
-  notes_inbox_database_id: replace-me
-  roadmap_database_id: replace-me
-  resources_database_id: replace-me
-  decisions_database_id: replace-me
-  weekly_reviews_database_id: replace-me
+  notes_inbox_data_source_id: replace-me
+  roadmap_data_source_id: replace-me
+  resources_data_source_id: replace-me
+  decisions_data_source_id: replace-me
+  weekly_reviews_data_source_id: replace-me
 
 todoist:
   project_id: replace-me
