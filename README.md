@@ -138,7 +138,8 @@ docs/                       Architecture, decisions, and implementation plan
 
 Read [the architecture](docs/ARCHITECTURE.md),
 [implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md), and
-[architecture decisions](docs/DECISIONS.md) before deploying.
+[architecture decisions](docs/DECISIONS.md) before deploying. Contributors
+should also read the [engineering guide](docs/ENGINEERING.md).
 
 ## Project status
 
