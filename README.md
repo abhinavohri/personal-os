@@ -103,6 +103,7 @@ uv run python scripts/bootstrap_todoist.py
 uv run python scripts/verify_todoist.py
 # Add your GitHub username and exact owner/repository allowlist, then:
 uv run python scripts/verify_github.py
+uv run python scripts/sync_github_catalog.py
 ```
 
 Then:

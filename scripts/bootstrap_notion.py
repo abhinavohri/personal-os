@@ -102,6 +102,9 @@ DATABASES: dict[str, tuple[str, str, dict[str, Any]]] = {
             "Primary Language": {"select": {}},
             "Private": {"checkbox": {}},
             "Last Reviewed": {"date": {}},
+            "Description": {"rich_text": {}},
+            "Topics": {"multi_select": {}},
+            "README Excerpt": {"rich_text": {}},
         },
     ),
     "decisions_data_source_id": (

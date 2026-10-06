@@ -59,6 +59,23 @@ class GitHubWorkEvidence:
             default_branch=body["default_branch"],
         )
 
+    async def get_readme_text(self, full_name: str) -> str | None:
+        """Return the default README as text after applying repository policy."""
+        await self.get_repository(full_name)
+        try:
+            response = await self._client.get(
+                f"/repos/{full_name}/readme",
+                headers={"Accept": "application/vnd.github.raw+json"},
+            )
+            if response.status_code == 404:
+                return None
+            response.raise_for_status()
+            return response.text
+        except Exception as exc:
+            raise GitHubEvidenceError(
+                f"Could not read GitHub README for {full_name}"
+            ) from exc
+
     async def recent_activity(
         self, full_name: str, since: datetime
     ) -> tuple[WorkEvent, ...]:

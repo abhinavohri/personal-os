@@ -7,6 +7,13 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class SystemConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    name: str = Field(min_length=1)
+    timezone: str = Field(min_length=1)
+
+
 class GCPConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
@@ -68,6 +75,7 @@ class PersonalOSConfig(BaseModel):
 
     model_config = ConfigDict(extra="ignore", frozen=True)
 
+    system: SystemConfig
     gcp: GCPConfig
     vertex: VertexConfig
     notion: NotionConfig

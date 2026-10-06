@@ -125,6 +125,64 @@ def test_private_repository_is_rejected_unless_enabled() -> None:
     asyncio.run(run())
 
 
+def test_readme_is_returned_as_raw_text() -> None:
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith("/readme"):
+            return httpx.Response(200, text="# Personal OS\nUseful context")
+        return httpx.Response(
+            200,
+            json={
+                "full_name": REPO,
+                "html_url": f"https://github.com/{REPO}",
+                "description": "My system",
+                "language": "Python",
+                "topics": ["personal-os"],
+                "private": False,
+                "default_branch": "main",
+            },
+        )
+
+    async def run():
+        client = _client(handler)
+        provider = GitHubWorkEvidence("token", "octocat", (REPO,), client=client)
+        result = await provider.get_readme_text(REPO)
+        await client.aclose()
+        return result
+
+    assert asyncio.run(run()) == "# Personal OS\nUseful context"
+    assert requests[-1].headers["Accept"] == "application/vnd.github.raw+json"
+
+
+def test_missing_readme_returns_none() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/readme"):
+            return httpx.Response(404)
+        return httpx.Response(
+            200,
+            json={
+                "full_name": REPO,
+                "html_url": f"https://github.com/{REPO}",
+                "description": None,
+                "language": None,
+                "topics": [],
+                "private": False,
+                "default_branch": "main",
+            },
+        )
+
+    async def run():
+        client = _client(handler)
+        provider = GitHubWorkEvidence("token", "octocat", (REPO,), client=client)
+        result = await provider.get_readme_text(REPO)
+        await client.aclose()
+        return result
+
+    assert asyncio.run(run()) is None
+
+
 def _client(handler) -> httpx.AsyncClient:
     return httpx.AsyncClient(
         transport=httpx.MockTransport(handler), base_url="https://api.github.com"
