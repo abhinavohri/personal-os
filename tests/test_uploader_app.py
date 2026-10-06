@@ -69,9 +69,27 @@ def test_authenticated_scan_is_uploaded() -> None:
     )
 
     assert response.status_code == 201
-    assert response.json()["uri"].startswith("gs://notes/inbox/")
+    assert response.json()["count"] == 1
+    assert response.json()["uploads"][0]["uri"].startswith("gs://notes/inbox/")
     assert store.saved[1] == b"\x89PNG\r\n\x1a\nscan"
     assert store.saved[2]["uploaded_by"] == "person@example.com"
+
+
+def test_multiple_scans_are_uploaded_in_one_request() -> None:
+    client, store = _client()
+
+    response = client.post(
+        "/api/notes",
+        headers={"Authorization": "Bearer valid-token"},
+        files=[
+            ("file", ("page-1.png", b"\x89PNG\r\n\x1a\none", "image/png")),
+            ("file", ("page-2.jpg", b"\xff\xd8\xfftwo", "image/jpeg")),
+        ],
+    )
+
+    assert response.status_code == 201
+    assert response.json()["count"] == 2
+    assert len(response.json()["uploads"]) == 2
 
 
 def test_disguised_file_is_rejected() -> None:
@@ -95,7 +113,7 @@ def test_oversized_request_is_rejected_before_parsing() -> None:
         "/api/notes",
         headers={
             "Authorization": "Bearer valid-token",
-            "Content-Length": str(22 * 1024 * 1024),
+            "Content-Length": str(102 * 1024 * 1024),
             "Content-Type": "multipart/form-data; boundary=test",
         },
         content=b"not parsed",

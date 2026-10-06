@@ -89,3 +89,41 @@ def test_oversized_scan_is_rejected_before_storage() -> None:
             )
         )
     assert store.saved is None
+
+
+def test_batch_with_more_than_ten_files_is_rejected_before_storage() -> None:
+    store = FakeStore()
+    notes = [
+        NoteUpload(
+            filename=f"page-{index}.png",
+            content_type="image/png",
+            size=8,
+            file=BytesIO(b"\x89PNG\r\n\x1a\n"),
+            uploaded_by="person@example.com",
+        )
+        for index in range(11)
+    ]
+
+    with pytest.raises(InvalidNoteUpload, match="no more than 10"):
+        _service(store).upload_many(notes)
+
+    assert store.saved is None
+
+
+def test_batch_larger_than_100_mb_is_rejected_before_storage() -> None:
+    store = FakeStore()
+    notes = [
+        NoteUpload(
+            filename=f"page-{index}.png",
+            content_type="image/png",
+            size=20 * 1024 * 1024,
+            file=BytesIO(b"\x89PNG\r\n\x1a\n"),
+            uploaded_by="person@example.com",
+        )
+        for index in range(6)
+    ]
+
+    with pytest.raises(InvalidNoteUpload, match="larger than 100 MB"):
+        _service(store).upload_many(notes)
+
+    assert store.saved is None

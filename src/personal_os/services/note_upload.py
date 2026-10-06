@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import BinaryIO, Callable
+from typing import BinaryIO, Callable, Iterable
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
@@ -12,6 +12,8 @@ from personal_os.ports.object_store import ObjectStore, StoredObject
 
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+MAX_BATCH_UPLOAD_BYTES = 100 * 1024 * 1024
+MAX_FILES_PER_UPLOAD = 10
 SUPPORTED_CONTENT_TYPES = frozenset(
     {
         "application/pdf",
@@ -57,6 +59,22 @@ class NoteUploadService:
 
     def upload(self, note: NoteUpload) -> StoredObject:
         _validate(note)
+        return self._store(note)
+
+    def upload_many(self, notes: Iterable[NoteUpload]) -> tuple[StoredObject, ...]:
+        """Validate an entire batch before storing its files sequentially."""
+        batch = tuple(notes)
+        if not batch:
+            raise InvalidNoteUpload("Choose at least one image or PDF to upload")
+        if len(batch) > MAX_FILES_PER_UPLOAD:
+            raise InvalidNoteUpload("Choose no more than 10 files at once")
+        if sum(note.size for note in batch) > MAX_BATCH_UPLOAD_BYTES:
+            raise InvalidNoteUpload("The selected files are larger than 100 MB in total")
+        for note in batch:
+            _validate(note)
+        return tuple(self._store(note) for note in batch)
+
+    def _store(self, note: NoteUpload) -> StoredObject:
         now = self._clock().astimezone(self._timezone)
         safe_name = _safe_filename(note.filename)
         object_name = (

@@ -13,6 +13,8 @@ from google.oauth2 import id_token
 
 from personal_os.providers.gcs import GCSObjectStore, ObjectStoreError
 from personal_os.services.note_upload import (
+    MAX_BATCH_UPLOAD_BYTES,
+    MAX_FILES_PER_UPLOAD,
     MAX_UPLOAD_BYTES,
     InvalidNoteUpload,
     NoteUpload,
@@ -96,10 +98,11 @@ def create_app(
     async def reject_oversized_requests(request: Request, call_next):
         if request.url.path == "/api/notes":
             content_length = request.headers.get("content-length")
-            if content_length and int(content_length) > MAX_UPLOAD_BYTES + 1024 * 1024:
+            request_limit = MAX_BATCH_UPLOAD_BYTES + 1024 * 1024
+            if content_length and int(content_length) > request_limit:
                 return JSONResponse(
                     status_code=413,
-                    content={"detail": "The upload request is larger than 21 MB"},
+                    content={"detail": "The upload request is larger than 101 MB"},
                 )
         return await call_next(request)
 
@@ -116,30 +119,36 @@ def create_app(
         return {"googleOAuthClientId": settings.google_oauth_client_id}
 
     @app.post("/api/notes", status_code=201)
-    def upload_note(
-        file: Annotated[UploadFile, File()],
+    def upload_notes(
+        files: Annotated[list[UploadFile], File(alias="file")],
         authorization: Annotated[str | None, Header()] = None,
-    ) -> dict[str, str | int | None]:
+    ) -> dict[str, int | list[dict[str, str | int | None]]]:
         identity = _identity(authorization, verifier)
-        size = _file_size(file)
         try:
-            stored = uploads.upload(
+            stored_objects = uploads.upload_many(
                 NoteUpload(
                     filename=file.filename or "",
                     content_type=file.content_type or "",
-                    size=size,
+                    size=_file_size(file),
                     file=file.file,
                     uploaded_by=identity.email,
                 )
+                for file in files
             )
         except InvalidNoteUpload as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except ObjectStoreError as exc:
             raise HTTPException(status_code=502, detail="Cloud Storage upload failed") from exc
         return {
-            "uri": stored.uri,
-            "size": stored.size,
-            "contentType": stored.content_type,
+            "count": len(stored_objects),
+            "uploads": [
+                {
+                    "uri": stored.uri,
+                    "size": stored.size,
+                    "contentType": stored.content_type,
+                }
+                for stored in stored_objects
+            ],
         }
 
     return app

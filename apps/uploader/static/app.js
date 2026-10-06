@@ -55,10 +55,28 @@ document.querySelector("#signout").addEventListener("click", () => {
 });
 
 fileInput.addEventListener("change", () => {
-  const file = fileInput.files[0];
-  if (!file) return resetSelection();
-  document.querySelector("#file-title").textContent = file.name;
-  document.querySelector("#file-detail").textContent = formatBytes(file.size);
+  const files = Array.from(fileInput.files);
+  if (!files.length) return resetSelection();
+
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+  const oversized = files.find((file) => file.size > 20 * 1024 * 1024);
+  if (files.length > 10 || oversized || totalSize > 100 * 1024 * 1024) {
+    const problem = files.length > 10
+      ? "Choose no more than 10 files."
+      : oversized
+        ? `${oversized.name} is larger than 20 MB.`
+        : "The selected files are larger than 100 MB in total.";
+    fileInput.value = "";
+    resetSelection();
+    showMessage(problem, "error");
+    return;
+  }
+
+  const file = files[0];
+  document.querySelector("#file-title").textContent = files.length === 1
+    ? file.name
+    : `${files.length} files selected`;
+  document.querySelector("#file-detail").textContent = `${formatBytes(totalSize)} total`;
   submitButton.disabled = false;
   clearMessage();
 
@@ -72,14 +90,14 @@ fileInput.addEventListener("change", () => {
 
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const file = fileInput.files[0];
-  if (!file || !idToken) return;
+  const files = Array.from(fileInput.files);
+  if (!files.length || !idToken) return;
 
   submitButton.disabled = true;
   submitButton.querySelector("span:first-child").textContent = "Uploading…";
   clearMessage();
   const form = new FormData();
-  form.append("file", file);
+  files.forEach((file) => form.append("file", file));
 
   try {
     const response = await fetch("/api/notes", {
@@ -89,7 +107,8 @@ uploadForm.addEventListener("submit", async (event) => {
     });
     const body = await response.json();
     if (!response.ok) throw new Error(body.detail || "Upload failed");
-    showMessage("Saved privately. Your note is ready for processing.", "success");
+    const noun = body.count === 1 ? "note" : "notes";
+    showMessage(`Saved ${body.count} ${noun} privately.`, "success");
     fileInput.value = "";
     resetSelection();
   } catch (error) {
@@ -101,8 +120,8 @@ uploadForm.addEventListener("submit", async (event) => {
 });
 
 function resetSelection() {
-  document.querySelector("#file-title").textContent = "Take photo or choose file";
-  document.querySelector("#file-detail").textContent = "JPEG, PNG, WebP, HEIC or PDF · up to 20 MB";
+  document.querySelector("#file-title").textContent = "Take photos or choose files";
+  document.querySelector("#file-detail").textContent = "Up to 10 files · 20 MB each · 100 MB total";
   previewWrap.hidden = true;
   preview.removeAttribute("src");
   submitButton.disabled = true;

@@ -5,6 +5,9 @@ Google Sign-In, validates them, and writes them to the private paper-notes GCS
 bucket. The browser never receives Cloud credentials and the bucket remains
 private.
 
+Each request accepts up to 10 files, with a 20 MB per-file limit and a 100 MB
+total batch limit. The complete batch is validated before storage begins.
+
 ## Required environment
 
 ```text
