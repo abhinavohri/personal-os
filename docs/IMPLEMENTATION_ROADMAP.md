@@ -104,8 +104,7 @@ week of tasks.
 
 - Gather structured execution evidence and diagnose plan pressure without asking
   the user to estimate available weekly hours.
-- Implement durable, versioned review drafts and compare each plan with its
-  eventual outcome.
+- Compare each saved review and proposed plan with its eventual outcome.
 - Schedule it at a user-approved time.
 - Add failure reporting and idempotency.
 - Run one complete rehearsal with test data.

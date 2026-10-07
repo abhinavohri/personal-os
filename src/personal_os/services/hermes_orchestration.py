@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from personal_os.config import PersonalOSConfig
 from personal_os.domain.planning import ExecutionObservation, assess_execution
 from personal_os.ports.memory import DurableMemory
+from personal_os.ports.reviews import ExecutionReviewSnapshot, ReviewStore
 from personal_os.ports.search import WebSearch
 from personal_os.ports.tasks import TaskRecord, TaskStore
 from personal_os.ports.work_evidence import WorkEvidence
@@ -43,6 +44,7 @@ class HermesOrchestrator:
         work_evidence: WorkEvidence,
         tasks: TaskStore,
         note_processor: PendingNoteProcessor,
+        reviews: ReviewStore,
         *,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
@@ -52,6 +54,7 @@ class HermesOrchestrator:
         self._work_evidence = work_evidence
         self._tasks = tasks
         self._note_processor = note_processor
+        self._reviews = reviews
         self._clock = clock or (lambda: datetime.now(UTC))
         self._context_pages = {
             "agent_brief": config.notion.agent_brief_page_id,
@@ -345,6 +348,64 @@ class HermesOrchestrator:
                 "Uses Todoist status, allowlisted GitHub activity, the Current Week page, "
                 "processed notes, and deliberate check-ins. It does not passively monitor "
                 "screens, browser history, or applications."
+            ),
+        }
+
+    async def save_execution_review_draft(
+        self, window_days: int | None = None
+    ) -> dict[str, object]:
+        """Persist one idempotent Notion draft for the current review window."""
+        review = await self.execution_review(window_days)
+        window = review["window"]
+        metrics = review["metrics"]
+        assessment = review["assessment"]
+        window_start = datetime.fromisoformat(window["start"])
+        window_end = datetime.fromisoformat(window["end"])
+        review_key = f"execution:{window_end.date().isoformat()}:{window['days']}"
+        summary = (
+            f"{assessment['state'].title()} — {metrics['completed_tasks']} completed, "
+            f"{metrics['active_tasks']} active, {metrics['overdue_tasks']} overdue, "
+            f"{metrics['rollover_tasks']} rollovers, {metrics['github_events']} GitHub events."
+        )
+        snapshot = ExecutionReviewSnapshot(
+            review_key=review_key,
+            window_start=window_start,
+            window_end=window_end,
+            assessment=assessment["state"],
+            active_tasks=metrics["active_tasks"],
+            completed_tasks=metrics["completed_tasks"],
+            observed_completions_per_week=metrics[
+                "observed_completions_per_week"
+            ],
+            overdue_tasks=metrics["overdue_tasks"],
+            rollover_tasks=metrics["rollover_tasks"],
+            github_events=metrics["github_events"],
+            summary=summary,
+        )
+        record = await self._reviews.upsert_draft(snapshot)
+        history = await self._reviews.list_recent(4)
+        return {
+            "review_key": review_key,
+            "notion_page_id": record.id,
+            "notion_url": record.url,
+            "summary": summary,
+            "recent_history": [
+                {
+                    "review_key": item.review_key,
+                    "window_end": item.window_end.isoformat(),
+                    "assessment": item.assessment,
+                    "completed_tasks": item.completed_tasks,
+                    "observed_completions_per_week": (
+                        item.observed_completions_per_week
+                    ),
+                    "overdue_tasks": item.overdue_tasks,
+                    "rollover_tasks": item.rollover_tasks,
+                }
+                for item in history
+            ],
+            "action_boundary": (
+                "This saves or refreshes a Draft review only. It does not alter the roadmap "
+                "or publish Todoist tasks; those changes require explicit approval."
             ),
         }
 

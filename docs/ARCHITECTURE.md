@@ -94,6 +94,11 @@ a strategic change only when repeated evidence shows that the outcome or lane
 itself is wrong. Every proposed change includes its evidence and remains a draft
 until the applicable approval boundary is satisfied.
 
+Each saved review uses a deterministic key for its date and observation window.
+Repeated runs refresh the same Notion draft rather than creating duplicates.
+Comparable task and GitHub metrics remain available to later reviews so the
+planner can distinguish a one-off bad period from a repeated pattern.
+
 ## GitHub as work evidence
 
 GitHub supplements the resume and self-reported progress with concrete work.

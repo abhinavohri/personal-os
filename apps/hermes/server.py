@@ -48,6 +48,7 @@ async def app_lifespan(_: MCPServer) -> AsyncIterator[AppContext]:
         adapters.work_evidence,
         adapters.tasks,
         note_processor,
+        adapters.reviews,
     )
     try:
         yield AppContext(adapters=adapters, orchestrator=orchestrator)
@@ -142,6 +143,14 @@ async def personal_os_execution_review(
 ) -> dict[str, object]:
     """Assess recent execution and recommend how the next plan should adapt."""
     return await _orchestrator(ctx).execution_review(window_days)
+
+
+@mcp.tool()
+async def personal_os_save_execution_review_draft(
+    ctx: Context[AppContext], window_days: int | None = None
+) -> dict[str, object]:
+    """Save an idempotent Notion draft of the current adaptive execution review."""
+    return await _orchestrator(ctx).save_execution_review_draft(window_days)
 
 
 @mcp.tool()

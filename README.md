@@ -244,6 +244,7 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 
 The design, safety boundaries, provider-neutral ports, adapters, local scan
 uploader, idempotent local note processor, and Hermes MCP tools are implemented.
-The primary local Hermes host is registered with Vertex AI, and its execution
-review can diagnose recent planning pressure. Approval-gated plan publication,
-durable review drafts, and scheduled reviews have not yet been completed.
+The primary local Hermes host is registered with Vertex AI. Its execution review
+can diagnose recent planning pressure and save an idempotent Notion draft with
+comparable metrics. Approval-gated plan publication and scheduled reviews have
+not yet been completed.

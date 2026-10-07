@@ -10,12 +10,14 @@ small set of bounded tools:
 - inspect metadata, README text, and activity for an allowlisted GitHub repo;
 - read active and recently completed Todoist tasks;
 - assess execution evidence and recommend how the next plan should adapt; and
+- save an idempotent, versioned execution-review draft in Notion; and
 - process pending notebook scans into review drafts.
 
-It does not expose email sending, job applications, course enrollment, Todoist
-task creation, GitHub writes, or arbitrary Notion writes. Hermes can recommend
-those actions, but the user must approve them before a separate write path is
-used.
+The only planning write creates or refreshes a clearly marked Notion review
+draft. It does not expose email sending, job applications, course enrollment,
+Todoist task creation, GitHub writes, roadmap mutation, or arbitrary Notion
+writes. Hermes can recommend those actions, but the user must approve them
+before a separate write path is used.
 
 ## Run locally
 

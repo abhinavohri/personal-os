@@ -6,6 +6,7 @@ import pytest
 from apps.hermes.server import mcp
 from personal_os.config import PersonalOSConfig
 from personal_os.ports.memory import MemoryRecordRef
+from personal_os.ports.reviews import ExecutionReviewSnapshot
 from personal_os.ports.search import SearchResponse, SearchSource
 from personal_os.ports.tasks import TaskRecord
 from personal_os.ports.work_evidence import (
@@ -154,6 +155,18 @@ class FakeNotes:
         )
 
 
+class FakeReviews:
+    def __init__(self) -> None:
+        self.saved: ExecutionReviewSnapshot | None = None
+
+    async def upsert_draft(self, review: ExecutionReviewSnapshot):
+        self.saved = review
+        return MemoryRecordRef("review-page", "https://notion.so/review-page")
+
+    async def list_recent(self, limit: int = 4):
+        return (self.saved,) if self.saved else ()
+
+
 def _config() -> PersonalOSConfig:
     return PersonalOSConfig.model_validate(
         {
@@ -203,6 +216,7 @@ def _orchestrator():
         FakeEvidence(),
         FakeTasks(),
         FakeNotes(),
+        FakeReviews(),
         clock=lambda: NOW,
     )
     return service, memory, search
@@ -285,6 +299,17 @@ def test_execution_review_infers_load_and_diagnoses_plan_pressure() -> None:
     assert "does not passively monitor" in result["monitoring_scope"]
 
 
+def test_execution_review_draft_is_idempotently_keyed_and_does_not_publish() -> None:
+    service, _, _ = _orchestrator()
+
+    result = asyncio.run(service.save_execution_review_draft(14))
+
+    assert result["review_key"] == "execution:2026-10-07:14"
+    assert result["notion_page_id"] == "review-page"
+    assert result["recent_history"][0]["assessment"] == "strained"
+    assert "does not alter the roadmap" in result["action_boundary"]
+
+
 def test_note_processing_is_bounded_to_ten_and_returns_review_drafts() -> None:
     service, _, _ = _orchestrator()
 
@@ -307,5 +332,6 @@ def test_mcp_surface_contains_no_consequential_write_tool() -> None:
         "personal_os_portfolio_evidence",
         "personal_os_task_progress",
         "personal_os_execution_review",
+        "personal_os_save_execution_review_draft",
         "personal_os_process_pending_notes",
     }
