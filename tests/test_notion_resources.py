@@ -99,6 +99,48 @@ def test_existing_resource_preserves_status_and_merges_tags() -> None:
     ]
 
 
+def test_inbox_follows_cursor_pagination_beyond_one_hundred() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        if request.method == "GET":
+            return httpx.Response(200, json={"properties": _schema()})
+        if request.method == "POST" and request.url.path.endswith("/query"):
+            calls += 1
+            body = json.loads(request.content)
+            if calls == 1:
+                assert body["page_size"] == 100
+                return httpx.Response(
+                    200,
+                    json={
+                        "results": [_page_with_id(f"resource-{index}") for index in range(100)],
+                        "next_cursor": "next",
+                    },
+                )
+            assert body["start_cursor"] == "next"
+            assert body["page_size"] == 20
+            return httpx.Response(
+                200,
+                json={
+                    "results": [_page_with_id(f"resource-{index}") for index in range(100, 120)],
+                    "next_cursor": None,
+                },
+            )
+        raise AssertionError((request.method, request.url.path))
+
+    async def run():
+        client = _client(handler)
+        store = NotionResourceInbox("token", "resources", client=client)
+        records = await store.list_inbox(120)
+        await client.aclose()
+        return records
+
+    records = asyncio.run(run())
+    assert len(records) == 120
+    assert records[-1].notion_page_id == "resource-119"
+
+
 def _client(handler) -> httpx.AsyncClient:
     return httpx.AsyncClient(
         transport=httpx.MockTransport(handler),
@@ -139,3 +181,9 @@ def _page(*, status: str = "Inbox", tags: tuple[str, ...] = ("systems",)) -> dic
             "Added At": {"date": {"start": NOW.isoformat()}},
         },
     }
+
+
+def _page_with_id(page_id: str) -> dict:
+    page = _page()
+    page["id"] = page_id
+    return page

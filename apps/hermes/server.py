@@ -220,10 +220,18 @@ async def personal_os_capture_resources(
 
 @mcp.tool()
 async def personal_os_resource_inbox(
-    ctx: Context[AppContext], limit: int = 50
+    ctx: Context[AppContext], limit: int = 100
 ) -> dict[str, object]:
     """Read the Notion resource inbox for later grouping and deliberate triage."""
     return await _orchestrator(ctx).resource_inbox(limit)
+
+
+@mcp.tool()
+async def personal_os_resource_summary(
+    ctx: Context[AppContext],
+) -> dict[str, object]:
+    """Summarize every inbox item by type and group, highlighting active and unclear items."""
+    return await _orchestrator(ctx).resource_summary()
 
 
 @mcp.tool()

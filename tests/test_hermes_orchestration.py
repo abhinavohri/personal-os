@@ -497,10 +497,13 @@ def test_mixed_resource_dump_is_captured_without_becoming_tasks() -> None:
 
     captured = asyncio.run(service.capture_resources(items))
     inbox = asyncio.run(service.resource_inbox())
+    summary = asyncio.run(service.resource_summary())
 
     assert captured["count"] == 2
     assert captured["captured"][0]["resource_type"] == "language"
     assert inbox["count"] == 2
+    assert summary["total"] == 2
+    assert summary["by_type"] == {"language": 1, "youtube_playlist": 1}
     assert "do not turn all" in captured["next_step"].lower()
     assert "do not publish tasks" in inbox["triage_policy"]
 
@@ -522,6 +525,7 @@ def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
         "personal_os_publish_plan_proposal",
         "personal_os_capture_resources",
         "personal_os_resource_inbox",
+        "personal_os_resource_summary",
         "personal_os_process_pending_notes",
     }
     save_tool = next(

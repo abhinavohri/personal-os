@@ -524,7 +524,7 @@ class HermesOrchestrator:
             ),
         }
 
-    async def resource_inbox(self, limit: int = 50) -> dict[str, object]:
+    async def resource_inbox(self, limit: int = 100) -> dict[str, object]:
         """Read recently captured resources awaiting deliberate triage."""
         records = await self._resources.list_inbox(limit)
         return {
@@ -534,6 +534,41 @@ class HermesOrchestrator:
                 "Separate active commitments from references. Recommend at most one primary "
                 "Build track, one slow Reading track, and one bounded Open exploration; do not "
                 "publish tasks or change the roadmap without approval."
+            ),
+        }
+
+    async def resource_summary(self) -> dict[str, object]:
+        """Summarize the full inbox without flooding the conversation with every URL."""
+        records = await self._resources.list_inbox(500)
+        by_type = Counter(record.resource_type for record in records)
+        by_tag = Counter(tag for record in records for tag in record.tags)
+        uncategorized = [
+            {
+                "title": record.title,
+                "url": record.url,
+                "notion_url": record.notion_url,
+            }
+            for record in records
+            if "uncategorized" in record.tags
+        ]
+        active = [
+            {
+                "title": record.title,
+                "url": record.url,
+                "tags": list(record.tags),
+            }
+            for record in records
+            if "active" in record.tags
+        ]
+        return {
+            "total": len(records),
+            "by_type": dict(by_type.most_common()),
+            "by_group": dict(by_tag.most_common()),
+            "active": active,
+            "uncategorized": uncategorized,
+            "next_step": (
+                "Ask the user which groups or individual items should be active, reference, "
+                "or archived. Do not create tasks merely because a group is large."
             ),
         }
 

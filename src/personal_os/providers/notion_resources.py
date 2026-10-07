@@ -100,21 +100,32 @@ class NotionResourceInbox:
         except Exception as exc:
             raise NotionResourceInboxError("Could not save resource inbox") from exc
 
-    async def list_inbox(self, limit: int = 50) -> tuple[ResourceRecord, ...]:
-        if not 1 <= limit <= 100:
-            raise ValueError("limit must be between 1 and 100")
+    async def list_inbox(self, limit: int = 100) -> tuple[ResourceRecord, ...]:
+        if not 1 <= limit <= 500:
+            raise ValueError("limit must be between 1 and 500")
         await self._ensure_schema()
         try:
-            response = await self._request(
-                "POST",
-                f"/data_sources/{self._data_source_id}/query",
-                json={
+            results: list[dict[str, Any]] = []
+            cursor: str | None = None
+            while len(results) < limit:
+                body: dict[str, Any] = {
                     "filter": {"property": "Status", "select": {"equals": "Inbox"}},
                     "sorts": [{"property": "Added At", "direction": "descending"}],
-                    "page_size": limit,
-                },
-            )
-            return tuple(_record(page) for page in response.json().get("results", []))
+                    "page_size": min(100, limit - len(results)),
+                }
+                if cursor:
+                    body["start_cursor"] = cursor
+                response = await self._request(
+                    "POST",
+                    f"/data_sources/{self._data_source_id}/query",
+                    json=body,
+                )
+                page = response.json()
+                results.extend(page.get("results", []))
+                cursor = page.get("next_cursor")
+                if not cursor:
+                    break
+            return tuple(_record(page) for page in results[:limit])
         except Exception as exc:
             raise NotionResourceInboxError("Could not read resource inbox") from exc
 
