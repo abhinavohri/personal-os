@@ -57,7 +57,13 @@ deeper weekly review replaces the daily run at 03:00 on Sunday. Both jobs use
 observed execution rather than a user estimate of available hours, and both
 remain draft-only until the user approves consequential changes.
 
+### Plan publication uses exact interactive approval
+
+Scheduled runs may create or revise a bounded Notion Plan Proposal, but they
+cannot publish it. Hermes presents the proposal and its exact approval phrase in
+an interactive conversation. Todoist publication uses deterministic command
+IDs and records task receipts so retries do not duplicate work.
+
 ## Pending
 
-- The exact approval experience for publishing proposed plans to Todoist and
-  applying material roadmap changes.
+- The approval experience for material roadmap changes.

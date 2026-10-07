@@ -63,6 +63,7 @@ Personal OS
 ├── Repository Catalog
 ├── Decision Log
 ├── Weekly Reviews
+├── Plan Proposals
 └── Archive
 ```
 
@@ -146,6 +147,12 @@ The default schedule prepares a daily draft at 03:00 Asia/Kolkata from Monday
 through Saturday. A deeper review replaces it at 03:00 on Sunday, avoiding two
 concurrent planners. Scheduled output remains a proposal; no task or roadmap
 mutation occurs merely because the job ran.
+
+Each run upserts a deterministic proposal key such as `daily:2026-10-07`.
+Editing the draft increments its version. Hermes shows an exact approval phrase,
+and only that phrase in an interactive conversation may publish the proposal.
+Todoist command UUIDs are derived from the proposal and action position, while
+Notion stores the returned task IDs, so retries do not duplicate the day.
 
 ## Career and learning
 

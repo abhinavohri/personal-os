@@ -1,7 +1,9 @@
 """Todoist task store adapter."""
 
+import json
 from datetime import date, datetime
 from typing import Any
+from uuid import UUID, uuid5
 
 import httpx
 
@@ -62,6 +64,78 @@ class TodoistTaskStore:
         except Exception as exc:
             raise TodoistError("Could not create Todoist task") from exc
 
+    async def create_tasks_idempotent(
+        self,
+        project_id: str,
+        proposal_key: str,
+        drafts: tuple[TaskDraft, ...],
+    ) -> tuple[str, ...]:
+        """Create a proposal batch once using stable Sync API command UUIDs."""
+        if not drafts:
+            raise ValueError("at least one task draft is required")
+
+        active = await self.list_active(project_id)
+        existing = {
+            marker: task.id
+            for task in active
+            for marker in (_proposal_marker_from(task.description),)
+            if marker is not None
+        }
+        task_ids: list[str | None] = [None] * len(drafts)
+        commands: list[dict[str, Any]] = []
+        temp_ids: dict[str, int] = {}
+        for index, draft in enumerate(drafts):
+            marker = _proposal_marker(proposal_key, index)
+            if marker in existing:
+                task_ids[index] = existing[marker]
+                continue
+            command_id = str(uuid5(_IDEMPOTENCY_NAMESPACE, f"command:{marker}"))
+            temp_id = str(uuid5(_IDEMPOTENCY_NAMESPACE, f"temporary:{marker}"))
+            args: dict[str, Any] = {
+                "content": draft.content,
+                "description": _description_with_marker(draft.description, marker),
+                "project_id": project_id,
+                "labels": list(draft.labels),
+            }
+            if draft.due_date is not None:
+                args["due"] = {"date": draft.due_date.isoformat()}
+            commands.append(
+                {
+                    "type": "item_add",
+                    "uuid": command_id,
+                    "temp_id": temp_id,
+                    "args": args,
+                }
+            )
+            temp_ids[temp_id] = index
+
+        if commands:
+            try:
+                response = await self._client.post(
+                    "/sync", data={"commands": json.dumps(commands)}
+                )
+                response.raise_for_status()
+                body = response.json()
+                statuses = body.get("sync_status", {})
+                failures = {
+                    command["uuid"]: statuses.get(command["uuid"])
+                    for command in commands
+                    if statuses.get(command["uuid"]) != "ok"
+                }
+                if failures:
+                    raise TodoistError(f"Todoist rejected plan commands: {failures}")
+                for temp_id, task_id in body.get("temp_id_mapping", {}).items():
+                    if temp_id in temp_ids:
+                        task_ids[temp_ids[temp_id]] = str(task_id)
+            except TodoistError:
+                raise
+            except Exception as exc:
+                raise TodoistError("Could not publish Todoist plan") from exc
+
+        if any(task_id is None for task_id in task_ids):
+            raise TodoistError("Todoist did not return every published task ID")
+        return tuple(str(task_id) for task_id in task_ids)
+
     async def _get_all(
         self, path: str, *, params: dict[str, Any], key: str
     ) -> list[dict[str, Any]]:
@@ -109,3 +183,24 @@ def _task(value: dict[str, Any]) -> TaskRecord:
 
 def _iso_z(value: datetime) -> str:
     return value.isoformat().replace("+00:00", "Z")
+
+
+_IDEMPOTENCY_NAMESPACE = UUID("97fb33ca-3cca-4eef-8b86-e40b7952839e")
+_MARKER_PREFIX = "personal-os-proposal:"
+
+
+def _proposal_marker(proposal_key: str, index: int) -> str:
+    return f"{_MARKER_PREFIX}{proposal_key}:{index}"
+
+
+def _description_with_marker(description: str, marker: str) -> str:
+    prefix = description.strip()
+    return f"{prefix}\n\n[{marker}]" if prefix else f"[{marker}]"
+
+
+def _proposal_marker_from(description: str) -> str | None:
+    for line in reversed(description.splitlines()):
+        stripped = line.strip()
+        if stripped.startswith(f"[{_MARKER_PREFIX}") and stripped.endswith("]"):
+            return stripped[1:-1]
+    return None

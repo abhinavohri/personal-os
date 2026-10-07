@@ -19,7 +19,7 @@ from personal_os.ports.memory import DurableMemory
 from personal_os.ports.plans import PlanProposalStore
 from personal_os.ports.reviews import ExecutionReviewSnapshot, ReviewStore
 from personal_os.ports.search import WebSearch
-from personal_os.ports.tasks import TaskRecord, TaskStore
+from personal_os.ports.tasks import TaskDraft, TaskRecord, TaskStore
 from personal_os.ports.work_evidence import WorkEvidence
 from personal_os.services.process_notes import NoteProcessingResult
 
@@ -455,6 +455,52 @@ class HermesOrchestrator:
                 "Todoist. Publishing requires the exact approval phrase returned with the "
                 "proposal."
             ),
+        }
+
+    async def publish_plan_proposal(
+        self,
+        proposal_key: str,
+        approval_phrase: str,
+    ) -> dict[str, object]:
+        """Publish exactly one explicitly approved proposal to Todoist."""
+        expected = f"APPROVE {proposal_key}"
+        if approval_phrase != expected:
+            raise ValueError(f"approval_phrase must exactly equal: {expected}")
+
+        proposal = await self._plans.get(proposal_key)
+        if proposal is None:
+            raise ValueError(f"Unknown plan proposal: {proposal_key}")
+        if proposal.status == "Published":
+            return {
+                "proposal": _plan_payload(proposal),
+                "result": "already_published",
+                "created_task_ids": list(proposal.todoist_task_ids),
+            }
+
+        drafts = tuple(
+            TaskDraft(
+                content=action.content,
+                description=action.description,
+                due_date=action.due_date,
+                labels=tuple(dict.fromkeys((*action.labels, "personal-os"))),
+            )
+            for action in proposal.actions
+        )
+        task_ids = await self._tasks.create_tasks_idempotent(
+            self._config.todoist.project_id,
+            proposal.proposal_key,
+            drafts,
+        )
+        published = await self._plans.mark_published(
+            proposal.proposal_key,
+            task_ids,
+            self._clock().astimezone(UTC),
+        )
+        return {
+            "proposal": _plan_payload(published),
+            "result": "published",
+            "created_task_ids": list(task_ids),
+            "message": "Approved actions were published to Todoist exactly once.",
         }
 
     async def process_pending_notes(self, limit: int = 10) -> dict[str, object]:

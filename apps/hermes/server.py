@@ -71,6 +71,9 @@ mcp = MCPServer(
         "act. Public professional recruiter contacts may be researched, but never guess private "
         "contact information. Draft outreach only. Never send a message, apply, enroll, publish "
         "tasks, or change GitHub without explicit user approval. "
+        "Only call personal_os_publish_plan_proposal when the user has typed the exact approval "
+        "phrase for that proposal in the current interactive conversation. Never call it from "
+        "a scheduled job or infer approval from general agreement. "
         "For portfolio gaps, first consider a coherent feature addition to a relevant existing "
         "project; suggest a new project only when the gap does not credibly belong in existing "
         "work."
@@ -180,6 +183,19 @@ async def personal_os_latest_plan_proposal(
 ) -> dict[str, object]:
     """Read the latest unpublished plan proposal and its exact approval phrase."""
     return await _orchestrator(ctx).latest_plan_proposal()
+
+
+@mcp.tool()
+async def personal_os_publish_plan_proposal(
+    proposal_key: str,
+    approval_phrase: str,
+    ctx: Context[AppContext],
+) -> dict[str, object]:
+    """Publish a draft only after the user types its exact approval phrase interactively."""
+    return await _orchestrator(ctx).publish_plan_proposal(
+        proposal_key,
+        approval_phrase,
+    )
 
 
 @mcp.tool()

@@ -32,3 +32,10 @@ class TaskStore(Protocol):
     ) -> tuple[TaskRecord, ...]: ...
 
     async def create_task(self, project_id: str, draft: TaskDraft) -> TaskRecord: ...
+
+    async def create_tasks_idempotent(
+        self,
+        project_id: str,
+        proposal_key: str,
+        drafts: tuple[TaskDraft, ...],
+    ) -> tuple[str, ...]: ...

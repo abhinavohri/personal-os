@@ -84,6 +84,41 @@ def test_published_plan_cannot_be_overwritten() -> None:
     asyncio.run(run())
 
 
+def test_mark_published_records_task_receipts() -> None:
+    patched: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, json={"properties": _schema()})
+        if request.method == "POST" and request.url.path.endswith("/query"):
+            return httpx.Response(200, json={"results": [_page()]})
+        if request.method == "PATCH" and request.url.path == "/v1/pages/plan-page":
+            patched.update(json.loads(request.content)["properties"])
+            return httpx.Response(
+                200, json={"id": "plan-page", "url": "https://notion.so/plan-page"}
+            )
+        raise AssertionError((request.method, request.url.path))
+
+    published_at = datetime(2026, 10, 7, 3, tzinfo=UTC)
+
+    async def run():
+        client = _client(handler)
+        store = NotionPlanStore("token", "plans", client=client)
+        result = await store.mark_published(
+            PROPOSAL.proposal_key, ("todoist-1",), published_at
+        )
+        await client.aclose()
+        return result
+
+    result = asyncio.run(run())
+    assert result.status == "Published"
+    assert result.todoist_task_ids == ("todoist-1",)
+    assert patched["Status"]["select"]["name"] == "Published"
+    assert json.loads(
+        patched["Todoist Task IDs"]["rich_text"][0]["text"]["content"]
+    ) == ["todoist-1"]
+
+
 def _client(handler) -> httpx.AsyncClient:
     return httpx.AsyncClient(
         transport=httpx.MockTransport(handler),

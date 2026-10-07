@@ -11,8 +11,9 @@ evidence; and handwritten notes are scanned into private Cloud Storage.
 Paper notes -> Cloud Storage -> local worker -> Vertex AI -> Notion Notes Inbox
 
 GitHub activity -----+
-Todoist progress ----+-> Hermes weekly review -> Notion roadmap -> next tasks
-Web research --------+
+Todoist progress ----+-> Hermes review -> Notion plan proposal
+Web research --------+                         |
+                                      explicit approval -> Todoist
 ```
 
 On a normal day, you talk to Hermes and work from Todoist. You keep writing on
@@ -24,7 +25,7 @@ paper. Notion stays backstage as the inspectable roadmap and durable memory.
 | --- | --- |
 | Hermes Agent | Conversation, orchestration, scheduled reviews, and approvals |
 | Vertex AI | Handwriting extraction, routine planning, and deep reasoning |
-| Notion | Goals, lanes, roadmap, decisions, resources, and weekly reviews |
+| Notion | Goals, lanes, roadmap, decisions, resources, reviews, and plan proposals |
 | Todoist | Today's tasks, deadlines, recurring work, and completion status |
 | GitHub | Resume context, repository catalog, commits, PRs, issues, and work evidence |
 | Cloud Storage | Private archive of original notebook scans and extracted artifacts |
@@ -204,8 +205,15 @@ The primary setup uses `Asia/Kolkata` explicitly:
 The versioned prompts are in `prompts/daily-plan.md` and
 `prompts/weekly-review.md`. Results are stored locally under
 `~/.hermes/cron/output/`, while comparable evidence metrics are saved as
-idempotent Draft rows in Notion Weekly Reviews. Neither job publishes Todoist
-tasks or changes the roadmap.
+idempotent Draft rows in Notion Weekly Reviews. Each run also saves a versioned,
+bounded Plan Proposal. Neither job publishes Todoist tasks or changes the
+roadmap.
+
+To use a proposal, open Hermes and ask for the latest plan. You can revise it in
+conversation. When it is correct, type the exact phrase Hermes shows, such as
+`APPROVE daily:2026-10-07`. Only that interactive approval publishes the actions
+to Todoist. Retrying is safe: the proposal records Todoist task receipts and the
+publisher uses deterministic command IDs to avoid duplicate tasks.
 
 Useful commands:
 
@@ -230,10 +238,9 @@ Hermes can catch up once after the gateway returns; inspect `hermes cron status`
 before relying on a missed run.
 
 The provider adapters, configuration boundary, authenticated mobile scan
-uploader, local note processor, and bounded Hermes MCP tool server are
-implemented and covered by isolated tests. Hermes host installation, recurring
-jobs, approval-gated write workflows, and full end-to-end reviews remain to be
-built.
+uploader, local note processor, bounded Hermes MCP tool server, recurring
+reviews, and approval-gated Todoist publication are implemented and covered by
+isolated tests.
 
 Application code loads non-secret provider settings with
 `PersonalOSConfig.from_yaml("config/system.yaml")`, loads tokens with
@@ -279,7 +286,7 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 
 The design, safety boundaries, provider-neutral ports, adapters, local scan
 uploader, idempotent local note processor, and Hermes MCP tools are implemented.
-The primary local Hermes host is registered with Vertex AI. Its execution review
-can diagnose recent planning pressure and save an idempotent Notion draft with
-comparable metrics. Approval-gated plan publication and scheduled reviews have
-not yet been completed.
+The primary local Hermes host is registered with Vertex AI. Its scheduled
+reviews diagnose recent planning pressure, save comparable evidence plus a
+versioned plan proposal in Notion, and publish only an exactly approved proposal
+to Todoist.

@@ -119,6 +119,9 @@ class FakeEvidence:
 
 
 class FakeTasks:
+    def __init__(self) -> None:
+        self.published: list[tuple[str, str, tuple]] = []
+
     async def list_active(self, project_id: str):
         return (
             TaskRecord(
@@ -142,6 +145,10 @@ class FakeTasks:
 
     async def create_task(self, project_id: str, draft):
         raise AssertionError("Hermes must not publish tasks")
+
+    async def create_tasks_idempotent(self, project_id, proposal_key, drafts):
+        self.published.append((project_id, proposal_key, drafts))
+        return tuple(f"todoist-{index}" for index, _ in enumerate(drafts))
 
 
 class FakeNotes:
@@ -190,7 +197,15 @@ class FakePlans:
         return self.saved if self.saved and self.saved.proposal_key == proposal_key else None
 
     async def mark_published(self, proposal_key, task_ids, published_at):
-        raise AssertionError("draft tests must not publish")
+        assert self.saved is not None
+        self.saved = self.saved.model_copy(
+            update={
+                "status": "Published",
+                "todoist_task_ids": task_ids,
+                "published_at": published_at,
+            }
+        )
+        return self.saved
 
 
 def _config() -> PersonalOSConfig:
@@ -399,6 +414,49 @@ def test_plan_proposal_rejects_excess_core_actions() -> None:
         )
 
 
+def test_plan_publication_requires_exact_phrase_and_is_receipted() -> None:
+    tasks = FakeTasks()
+    plans = FakePlans()
+    service = HermesOrchestrator(
+        _config(),
+        FakeMemory(),
+        FakeSearch(),
+        FakeEvidence(),
+        tasks,
+        FakeNotes(),
+        FakeReviews(),
+        plans,
+        clock=lambda: NOW,
+    )
+    actions = (
+        PlanActionInput(content="Ship the slice", due_date=date(2026, 10, 7)),
+    )
+    asyncio.run(
+        service.save_plan_proposal(
+            date(2026, 10, 7), "daily", "One bounded outcome.", actions
+        )
+    )
+
+    with pytest.raises(ValueError, match="must exactly equal"):
+        asyncio.run(service.publish_plan_proposal("daily:2026-10-07", "okay"))
+    result = asyncio.run(
+        service.publish_plan_proposal(
+            "daily:2026-10-07", "APPROVE daily:2026-10-07"
+        )
+    )
+    repeated = asyncio.run(
+        service.publish_plan_proposal(
+            "daily:2026-10-07", "APPROVE daily:2026-10-07"
+        )
+    )
+
+    assert result["result"] == "published"
+    assert result["created_task_ids"] == ["todoist-0"]
+    assert repeated["result"] == "already_published"
+    assert len(tasks.published) == 1
+    assert tasks.published[0][2][0].labels == ("personal-os",)
+
+
 def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
     tools = asyncio.run(mcp.list_tools())
     names = {tool.name for tool in tools}
@@ -413,5 +471,6 @@ def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
         "personal_os_save_execution_review_draft",
         "personal_os_save_plan_proposal",
         "personal_os_latest_plan_proposal",
+        "personal_os_publish_plan_proposal",
         "personal_os_process_pending_notes",
     }

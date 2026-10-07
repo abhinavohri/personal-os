@@ -93,6 +93,62 @@ def test_todoist_errors_are_translated() -> None:
     asyncio.run(run())
 
 
+def test_idempotent_batch_uses_stable_sync_commands_and_recovers_existing() -> None:
+    sync_payloads = []
+    active_reads = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal active_reads
+        if request.method == "GET":
+            active_reads += 1
+            if active_reads == 1:
+                return httpx.Response(200, json={"results": [], "next_cursor": None})
+            existing = _task("new")
+            existing["description"] = "[personal-os-proposal:daily:2026-10-07:0]"
+            return httpx.Response(
+                200, json={"results": [existing], "next_cursor": None}
+            )
+        if request.method == "POST" and request.url.path == "/api/v1/sync":
+            commands = json.loads(dict(request.url.params).get("commands", "[]"))
+            if not commands:
+                from urllib.parse import parse_qs
+
+                commands = json.loads(parse_qs(request.content.decode())["commands"][0])
+            sync_payloads.append(commands)
+            command = commands[0]
+            return httpx.Response(
+                200,
+                json={
+                    "sync_status": {command["uuid"]: "ok"},
+                    "temp_id_mapping": {command["temp_id"]: "new"},
+                },
+            )
+        raise AssertionError((request.method, request.url.path))
+
+    async def run():
+        client = _client(handler)
+        store = TodoistTaskStore("token", client=client)
+        draft = TaskDraft("One task", due_date=date(2026, 10, 7))
+        first = await store.create_tasks_idempotent(
+            "project-1", "daily:2026-10-07", (draft,)
+        )
+        second = await store.create_tasks_idempotent(
+            "project-1", "daily:2026-10-07", (draft,)
+        )
+        await client.aclose()
+        return first, second
+
+    first, second = asyncio.run(run())
+    assert first == second == ("new",)
+    assert len(sync_payloads) == 1
+    command = sync_payloads[0][0]
+    assert command["type"] == "item_add"
+    assert command["args"]["due"] == {"date": "2026-10-07"}
+    assert command["args"]["description"].endswith(
+        "[personal-os-proposal:daily:2026-10-07:0]"
+    )
+
+
 async def _list_active(handler):
     client = _client(handler)
     store = TodoistTaskStore("token", client=client)
