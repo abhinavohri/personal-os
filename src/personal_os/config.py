@@ -70,6 +70,20 @@ class WebSearchConfig(BaseModel):
     model: str = Field(min_length=1)
 
 
+class PlanningConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", frozen=True)
+
+    max_core_tasks_per_day: int = Field(default=2, ge=1, le=10)
+    max_optional_tasks_per_day: int = Field(default=1, ge=0, le=10)
+    review_window_days: int = Field(default=14, ge=7, le=90)
+    rollover_after_days: int = Field(default=14, ge=1, le=90)
+    lanes: tuple[str, ...] = ("build", "reading", "open", "parking_lot")
+
+    @property
+    def max_daily_tasks(self) -> int:
+        return self.max_core_tasks_per_day + self.max_optional_tasks_per_day
+
+
 class PersonalOSConfig(BaseModel):
     """The provider settings required to construct the adapter suite."""
 
@@ -82,6 +96,7 @@ class PersonalOSConfig(BaseModel):
     todoist: TodoistConfig
     github: GitHubConfig
     web_search: WebSearchConfig
+    planning: PlanningConfig = PlanningConfig()
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "PersonalOSConfig":

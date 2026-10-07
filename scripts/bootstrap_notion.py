@@ -19,7 +19,7 @@ PAGES = {
     ),
     "profile_page_id": (
         "Profile and Constraints",
-        "Stable background, responsibilities, available time, preferences, and constraints.",
+        "Stable background, responsibilities, preferences, hard constraints, and deadlines. Sustainable load is inferred from execution.",
     ),
     "spine_page_id": (
         "Spine",

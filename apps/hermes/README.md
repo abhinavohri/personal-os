@@ -8,7 +8,8 @@ small set of bounded tools:
 - run grounded web research with citations;
 - read the public GitHub profile, profile README, repositories, and pins;
 - inspect metadata, README text, and activity for an allowlisted GitHub repo;
-- read active and recently completed Todoist tasks; and
+- read active and recently completed Todoist tasks;
+- assess execution evidence and recommend how the next plan should adapt; and
 - process pending notebook scans into review drafts.
 
 It does not expose email sending, job applications, course enrollment, Todoist

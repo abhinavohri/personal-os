@@ -16,6 +16,7 @@ def _task(task_id: str, *, completed_at: str | None = None) -> dict:
         "description": "Small next action",
         "project_id": "project-1",
         "due": {"date": "2026-10-07"},
+        "added_at": "2026-10-01T08:00:00Z",
         "completed_at": completed_at,
     }
 
@@ -54,7 +55,9 @@ def test_list_completed_normalizes_completion_time() -> None:
         await client.aclose()
         return result
 
-    assert asyncio.run(run())[0].completed_at == datetime(2026, 10, 6, 9, 30, tzinfo=UTC)
+    task = asyncio.run(run())[0]
+    assert task.created_at == datetime(2026, 10, 1, 8, tzinfo=UTC)
+    assert task.completed_at == datetime(2026, 10, 6, 9, 30, tzinfo=UTC)
 
 
 def test_create_task_sends_only_supported_fields() -> None:

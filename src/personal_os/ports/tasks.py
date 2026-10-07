@@ -20,6 +20,7 @@ class TaskRecord:
     project_id: str
     description: str = ""
     due_date: date | None = None
+    created_at: datetime | None = None
     completed_at: datetime | None = None
 
 

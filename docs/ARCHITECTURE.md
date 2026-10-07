@@ -80,6 +80,20 @@ without forcing Hermes to load the entire workspace on every interaction.
 The Notion roadmap contains outcomes and milestones. Todoist contains only the
 small actions required now.
 
+### Adaptive planning loop
+
+The system does not ask the user to predict a fixed number of available weekly
+hours. The first execution plan is deliberately conservative. Each review uses
+completed, overdue, and long-running Todoist tasks; allowlisted GitHub activity;
+processed notes; the Current Week context; and explicit blocker or priority
+check-ins. Task completion is a load signal, not a claim that all tasks have
+equal effort.
+
+Hermes first adjusts action size, order, scope, and work in progress. It proposes
+a strategic change only when repeated evidence shows that the outcome or lane
+itself is wrong. Every proposed change includes its evidence and remains a draft
+until the applicable approval boundary is satisfied.
+
 ## GitHub as work evidence
 
 GitHub supplements the resume and self-reported progress with concrete work.
@@ -117,9 +131,10 @@ requests, merges, and repository settings—require explicit user approval.
 
 ## Scheduled review
 
-The weekly job gathers completed and missed Todoist tasks, allowlisted GitHub
-activity, processed notes, roadmap state, and recent decisions. Hermes drafts a
-review and a proposed next week. Material roadmap changes and newly extracted
+The weekly job gathers completed, overdue, and long-running Todoist tasks,
+allowlisted GitHub activity, processed notes, roadmap state, and recent
+decisions. Hermes drafts a review and a revised next plan using observed
+execution as its capacity signal. Material roadmap changes and newly extracted
 tasks require user approval.
 
 ## Career and learning

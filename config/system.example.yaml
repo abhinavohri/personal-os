@@ -48,6 +48,8 @@ web_search:
 planning:
   max_core_tasks_per_day: 2
   max_optional_tasks_per_day: 1
+  review_window_days: 14
+  rollover_after_days: 14
   lanes:
     - build
     - reading

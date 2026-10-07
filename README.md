@@ -44,6 +44,13 @@ Notion contains outcomes and milestones. Todoist contains only the next small
 actions. Hermes reviews both and proposes changes; it does not silently change
 strategic priorities.
 
+The plan is a hypothesis, not a fixed calendar based on a guessed weekly-hours
+number. Hermes observes Todoist completions and rollovers, allowlisted GitHub
+activity, processed notes, and deliberate check-ins. It estimates a sustainable
+task load from actual execution, diagnoses blockers or oversized actions, and
+improves task size, order, scope, and work in progress. Only repeated evidence
+should trigger a proposed strategic change.
+
 ## Career and learning support
 
 Personal OS is intended to manage more than software projects. Learning tracks
@@ -155,7 +162,9 @@ Then:
    Serve.
 9. Run `uv run python scripts/process_notes.py` to convert pending scans into
    structured GCS artifacts and idempotent Notion drafts.
-10. Run the personal interview and approve the first spine, lanes, and roadmap.
+10. Provide target outcomes and hard constraints, then approve the first spine,
+    lanes, and deliberately conservative plan; Hermes will refine the load from
+    observed execution.
 11. Rehearse the weekly loop with test data before scheduling it.
 
 ### Hermes
@@ -235,5 +244,6 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 
 The design, safety boundaries, provider-neutral ports, adapters, local scan
 uploader, idempotent local note processor, and Hermes MCP tools are implemented.
-The primary local Hermes host is registered with Vertex AI; approval-gated
-write workflows and scheduled reviews have not yet been completed.
+The primary local Hermes host is registered with Vertex AI, and its execution
+review can diagnose recent planning pressure. Approval-gated plan publication,
+durable review drafts, and scheduled reviews have not yet been completed.

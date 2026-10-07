@@ -90,6 +90,7 @@ class TodoistTaskStore:
 def _task(value: dict[str, Any]) -> TaskRecord:
     due = value.get("due") or {}
     due_value = due.get("date")
+    created = value.get("added_at") or value.get("created_at")
     completed = value.get("completed_at")
     return TaskRecord(
         id=str(value["id"]),
@@ -97,6 +98,9 @@ def _task(value: dict[str, Any]) -> TaskRecord:
         project_id=str(value["project_id"]),
         description=value.get("description") or "",
         due_date=date.fromisoformat(due_value[:10]) if due_value else None,
+        created_at=datetime.fromisoformat(created.replace("Z", "+00:00"))
+        if created
+        else None,
         completed_at=datetime.fromisoformat(completed.replace("Z", "+00:00"))
         if completed
         else None,

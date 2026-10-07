@@ -123,7 +123,8 @@ class FakeTasks:
                 id="active",
                 content="Review portfolio",
                 project_id=project_id,
-                due_date=date(2026, 10, 8),
+                due_date=date(2026, 10, 6),
+                created_at=datetime(2026, 9, 20, tzinfo=UTC),
             ),
         )
 
@@ -269,6 +270,21 @@ def test_task_progress_never_uses_write_method() -> None:
     assert "explicitly approved" in result["action_boundary"]
 
 
+def test_execution_review_infers_load_and_diagnoses_plan_pressure() -> None:
+    service, _, _ = _orchestrator()
+
+    result = asyncio.run(service.execution_review(14))
+
+    assert result["metrics"]["completed_tasks"] == 1
+    assert result["metrics"]["observed_completions_per_week"] == 0.5
+    assert result["metrics"]["overdue_tasks"] == 1
+    assert result["metrics"]["rollover_tasks"] == 1
+    assert result["metrics"]["github_event_types"] == {"commit": 1}
+    assert result["assessment"]["state"] == "strained"
+    assert "weekly hours" in result["planning_policy"]
+    assert "does not passively monitor" in result["monitoring_scope"]
+
+
 def test_note_processing_is_bounded_to_ten_and_returns_review_drafts() -> None:
     service, _, _ = _orchestrator()
 
@@ -290,5 +306,6 @@ def test_mcp_surface_contains_no_consequential_write_tool() -> None:
         "personal_os_inspect_repository",
         "personal_os_portfolio_evidence",
         "personal_os_task_progress",
+        "personal_os_execution_review",
         "personal_os_process_pending_notes",
     }

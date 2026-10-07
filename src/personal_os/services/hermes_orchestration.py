@@ -1,10 +1,14 @@
 """Safe, provider-neutral capabilities exposed to Hermes."""
 
+import asyncio
+from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Literal, Protocol
+from zoneinfo import ZoneInfo
 
 from personal_os.config import PersonalOSConfig
+from personal_os.domain.planning import ExecutionObservation, assess_execution
 from personal_os.ports.memory import DurableMemory
 from personal_os.ports.search import WebSearch
 from personal_os.ports.tasks import TaskRecord, TaskStore
@@ -242,6 +246,108 @@ class HermesOrchestrator:
             ),
         }
 
+    async def execution_review(
+        self, window_days: int | None = None
+    ) -> dict[str, object]:
+        """Gather execution evidence and diagnose how the plan should adapt."""
+        days = window_days or self._config.planning.review_window_days
+        if not 7 <= days <= 90:
+            raise ValueError("window_days must be between 7 and 90")
+
+        now = self._clock().astimezone(UTC)
+        since = now - timedelta(days=days)
+        project_id = self._config.todoist.project_id
+        active, completed, current_week = await asyncio.gather(
+            self._tasks.list_active(project_id),
+            self._tasks.list_completed(project_id, since, now),
+            self._memory.read_page_text(self._config.notion.current_week_page_id),
+        )
+        repository_activity = await asyncio.gather(
+            *(
+                self._work_evidence.recent_activity(repository, since)
+                for repository in self._config.github.allowed_repositories
+            )
+        )
+        events = tuple(event for group in repository_activity for event in group)
+
+        local_today = now.astimezone(ZoneInfo(self._config.system.timezone)).date()
+        rollover_before = now - timedelta(
+            days=self._config.planning.rollover_after_days
+        )
+        overdue = tuple(
+            task for task in active if task.due_date and task.due_date < local_today
+        )
+        focus_due = tuple(
+            task for task in active if task.due_date and task.due_date <= local_today
+        )
+        rollovers = tuple(
+            task
+            for task in active
+            if task.created_at and task.created_at.astimezone(UTC) <= rollover_before
+        )
+        observation = ExecutionObservation(
+            active_tasks=len(active),
+            completed_tasks=len(completed),
+            overdue_tasks=len(overdue),
+            rollover_tasks=len(rollovers),
+            focus_due_tasks=len(focus_due),
+            github_events=len(events),
+            window_days=days,
+        )
+        assessment = assess_execution(
+            observation,
+            max_daily_tasks=self._config.planning.max_daily_tasks,
+        )
+        event_counts = Counter(event.kind for event in events)
+        return {
+            "window": {
+                "start": since.isoformat(),
+                "end": now.isoformat(),
+                "days": days,
+            },
+            "current_week_context": current_week,
+            "metrics": {
+                "active_tasks": observation.active_tasks,
+                "completed_tasks": observation.completed_tasks,
+                "observed_completions_per_week": observation.observed_completions_per_week,
+                "overdue_tasks": observation.overdue_tasks,
+                "rollover_tasks": observation.rollover_tasks,
+                "focus_due_tasks": observation.focus_due_tasks,
+                "github_events": observation.github_events,
+                "github_event_types": dict(sorted(event_counts.items())),
+            },
+            "active_tasks": [_task_payload(task) for task in active],
+            "recently_completed": [_task_payload(task) for task in completed],
+            "repository_activity": [
+                {
+                    "kind": event.kind,
+                    "repository": event.repository,
+                    "title": event.title,
+                    "url": event.url,
+                    "occurred_at": event.occurred_at.isoformat(),
+                }
+                for event in sorted(
+                    events, key=lambda item: item.occurred_at, reverse=True
+                )[:50]
+            ],
+            "assessment": {
+                "state": assessment.state,
+                "adjustments": list(assessment.adjustments),
+            },
+            "planning_policy": (
+                "Treat the next plan as a hypothesis. Infer sustainable load from observed "
+                "execution and improve task size, order, and work in progress before changing "
+                "strategic outcomes. Ask only for hard constraints, deadlines, blockers, or "
+                "priority choices—not an estimate of available weekly hours. Propose changes "
+                "with reasons; publishing tasks and material roadmap changes requires approval."
+            ),
+            "monitoring_scope": (
+                "Uses Todoist status, allowlisted GitHub activity, the Current Week page, "
+                "processed notes, and deliberate check-ins. It does not passively monitor "
+                "screens, browser history, or applications."
+            ),
+        }
+
     async def process_pending_notes(self, limit: int = 10) -> dict[str, object]:
         """Process scans into extraction artifacts and Notion review drafts."""
         if not 1 <= limit <= 10:
@@ -274,6 +380,7 @@ def _task_payload(task: TaskRecord) -> dict[str, object]:
         "content": task.content,
         "description": task.description,
         "due_date": task.due_date.isoformat() if task.due_date else None,
+        "created_at": task.created_at.isoformat() if task.created_at else None,
         "completed_at": (
             task.completed_at.isoformat() if task.completed_at else None
         ),
