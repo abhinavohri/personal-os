@@ -26,6 +26,25 @@ SENSITIVE_QUERY_KEYS = {
     "token",
 }
 
+ENRICHED_NOTES = {
+    "https://outskill-mini-projects.vercel.app/": (
+        "Public page inspected: a tiered archive of CrewAI mini-projects from beginner "
+        "through advanced agent pipelines."
+    ),
+    "https://startups.rip/": (
+        "Public page inspected: an archive of startup stories, lessons, research, and "
+        "possible build ideas."
+    ),
+    "https://superteam.fun/build": (
+        "Public page inspected: Solana/Web3 hackathon project ideas with links to grants, "
+        "bounties, events, and past winners."
+    ),
+    "https://pliutau.com/reading-list/": (
+        "Public page inspected: an automatically refreshed reading list of engineering "
+        "articles from selected technical blogs."
+    ),
+}
+
 
 def load_chrome_bookmarks(path: Path) -> tuple[ResourceCapture, ...]:
     """Read one local Chrome profile and retain folders as grouping evidence."""
@@ -56,6 +75,8 @@ def _walk(nodes: Iterable[dict], folders: tuple[str, ...]) -> list[ResourceCaptu
         title = (node.get("name") or urlsplit(url).netloc).strip()
         resource_type, tags = classify_bookmark(title, url, folders)
         notes = f"Imported from Chrome folder: {' / '.join(folders)}."
+        if url in ENRICHED_NOTES:
+            notes += f" {ENRICHED_NOTES[url]}"
         if url == "https://dsa.chaicode.com/roadmap":
             notes += " User identified this as the DSA roadmap they were following."
             tags = tuple(dict.fromkeys((*tags, "active", "dsa", "interview")))
@@ -98,7 +119,7 @@ def classify_bookmark(
     tags: list[str] = []
     groups = {
         "french": ("french", "français", "francais"),
-        "dsa": ("dsa", "algorithm", "leetcode", "coding interview"),
+        "dsa": ("dsa", "algorithm", "leetcode", "coding interview", "cses.fi"),
         "jobs-career": (
             " job",
             "jobs ",
@@ -111,6 +132,10 @@ def classify_bookmark(
         "kubernetes-devops": (
             "kubernetes",
             "k8s",
+            "k16s",
+            "cka",
+            "cks",
+            "kubelet",
             "devops",
             "docker",
             "cloud",
@@ -120,11 +145,21 @@ def classify_bookmark(
         "distributed-backend": (
             "distributed system",
             "system design",
+            "systems design",
+            "survive the traffic",
             "backend",
             "load balancer",
             "web works",
         ),
-        "ai-agents": ("agentic", "ai agent", "agents-for", "langgraph"),
+        "ai-agents": (
+            "agentic",
+            "ai agent",
+            "agents-for",
+            "langgraph",
+            "agent_",
+            "agent ",
+            "agents:",
+        ),
         "ai-inference": (
             "inference",
             "llm",
@@ -134,12 +169,28 @@ def classify_bookmark(
             "rag",
             "machine learning",
             "mlops",
+            "ai-infra",
+            "ai_infra",
         ),
         "databases": ("database", "postgres", "sql", "query engine", "indexing"),
         "security": ("security", "hacking", "offensive", "vuln"),
         "networks": ("network", "packet", "tcp", "http protocol"),
         "frontend": ("react", "browser engine", "typescript", "kotlin"),
         "projects": ("project-based", "build-your-own", "hands-on", "from scratch"),
+        "general-cs": (
+            "computer science",
+            "cs theory",
+            "missing semester",
+            "how-web-works",
+            "codecrafters",
+        ),
+        "startup-ideas": ("startup", "hackathon", "superteam"),
+        "blockchain": ("solana", "web3", "flowresearch"),
+        "engineering-reading": ("reading list", "engineering articles"),
+        "leadership": ("engineering leader", "leadership"),
+        "open-source": ("open source", "open-source", "openmrs"),
+        "personal-review": ("chat.google.com", "drive.google.com/drive/u/"),
+        "leisure-reading": ("secret wars", "archive.org/details"),
     }
     for group, keywords in groups.items():
         if any(keyword in text for keyword in keywords):
