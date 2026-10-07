@@ -115,6 +115,14 @@ async def personal_os_inspect_repository(
 
 
 @mcp.tool()
+async def personal_os_portfolio_evidence(
+    ctx: Context[AppContext], repository_limit: int = 30
+) -> dict[str, object]:
+    """Read the public GitHub profile, profile README, repositories, and current pins."""
+    return await _orchestrator(ctx).portfolio_evidence(repository_limit)
+
+
+@mcp.tool()
 async def personal_os_task_progress(
     ctx: Context[AppContext], completed_days: int = 14
 ) -> dict[str, object]:

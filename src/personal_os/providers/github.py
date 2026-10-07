@@ -5,7 +5,13 @@ from typing import Any
 
 import httpx
 
-from personal_os.ports.work_evidence import RepositorySnapshot, WorkEvent
+from personal_os.ports.work_evidence import (
+    DeveloperProfile,
+    PortfolioRepository,
+    PortfolioSnapshot,
+    RepositorySnapshot,
+    WorkEvent,
+)
 
 
 GITHUB_API_VERSION = "2026-03-10"
@@ -121,6 +127,105 @@ class GitHubWorkEvidence:
         )
         return tuple(sorted(events, key=lambda event: event.occurred_at, reverse=True))
 
+    async def get_portfolio(self, limit: int = 30) -> PortfolioSnapshot:
+        """Return public profile evidence for portfolio coaching."""
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        profile, repositories, pinned = await self._portfolio_data(limit)
+        profile_repository = f"{self._username}/{self._username}".lower()
+        profile_readme = None
+        if any(
+            item.get("full_name", "").lower() == profile_repository
+            for item in repositories
+        ):
+            profile_readme = await self._get_public_readme(
+                f"{self._username}/{self._username}"
+            )
+        return PortfolioSnapshot(
+            profile=DeveloperProfile(
+                username=profile["login"],
+                url=profile["html_url"],
+                name=profile.get("name"),
+                bio=profile.get("bio"),
+                company=profile.get("company"),
+                blog=profile.get("blog") or None,
+                location=profile.get("location"),
+                followers=profile.get("followers", 0),
+                following=profile.get("following", 0),
+                public_repositories=profile.get("public_repos", 0),
+            ),
+            profile_readme=profile_readme,
+            repositories=tuple(
+                _portfolio_repository(item, pinned) for item in repositories
+            ),
+        )
+
+    async def _portfolio_data(
+        self, limit: int
+    ) -> tuple[dict[str, Any], list[dict[str, Any]], frozenset[str]]:
+        profile = await self._get(f"/users/{self._username}")
+        repositories = await self._get(
+            f"/users/{self._username}/repos",
+            params={
+                "type": "owner",
+                "sort": "updated",
+                "direction": "desc",
+                "per_page": limit,
+            },
+        )
+        pinned = await self._pinned_repositories()
+        return profile, repositories, pinned
+
+    async def _pinned_repositories(self) -> frozenset[str]:
+        query = """
+        query PortfolioPins($login: String!) {
+          user(login: $login) {
+            pinnedItems(first: 6, types: REPOSITORY) {
+              nodes { ... on Repository { nameWithOwner } }
+            }
+          }
+        }
+        """
+        try:
+            response = await self._client.post(
+                "/graphql",
+                json={"query": query, "variables": {"login": self._username}},
+            )
+            response.raise_for_status()
+            body = response.json()
+            if body.get("errors"):
+                raise GitHubEvidenceError("GitHub GraphQL rejected the pinned-repo query")
+            nodes = (
+                body.get("data", {})
+                .get("user", {})
+                .get("pinnedItems", {})
+                .get("nodes", [])
+            )
+            return frozenset(
+                item["nameWithOwner"]
+                for item in nodes
+                if item and item.get("nameWithOwner")
+            )
+        except GitHubEvidenceError:
+            raise
+        except Exception as exc:
+            raise GitHubEvidenceError("Could not read pinned GitHub repositories") from exc
+
+    async def _get_public_readme(self, full_name: str) -> str | None:
+        try:
+            response = await self._client.get(
+                f"/repos/{full_name}/readme",
+                headers={"Accept": "application/vnd.github.raw+json"},
+            )
+            if response.status_code == 404:
+                return None
+            response.raise_for_status()
+            return response.text
+        except Exception as exc:
+            raise GitHubEvidenceError(
+                f"Could not read public GitHub README for {full_name}"
+            ) from exc
+
     async def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         try:
             response = await self._client.get(path, params=params)
@@ -176,6 +281,26 @@ def _release_event(repository: str, item: dict[str, Any]) -> WorkEvent:
         title=item.get("name") or item["tag_name"],
         url=item["html_url"],
         occurred_at=_timestamp(item.get("published_at") or item["created_at"]),
+    )
+
+
+def _portfolio_repository(
+    item: dict[str, Any], pinned: frozenset[str]
+) -> PortfolioRepository:
+    pushed_at = item.get("pushed_at")
+    return PortfolioRepository(
+        full_name=item["full_name"],
+        url=item["html_url"],
+        description=item.get("description"),
+        primary_language=item.get("language"),
+        topics=tuple(item.get("topics", [])),
+        stars=item.get("stargazers_count", 0),
+        forks=item.get("forks_count", 0),
+        is_archived=item.get("archived", False),
+        is_fork=item.get("fork", False),
+        updated_at=_timestamp(item["updated_at"]),
+        pushed_at=_timestamp(pushed_at) if pushed_at else None,
+        is_pinned=item["full_name"] in pinned,
     )
 
 

@@ -77,6 +77,12 @@ propose an approved next action without directly coupling to provider APIs.
   assessments.
 - Search periodically for relevant jobs and courses with citations; shortlist
   by explicit criteria and never apply automatically.
+- Find only explicitly published professional recruiter contacts, draft
+  personalized outreach, and never guess private email addresses or send
+  messages without approval.
+- Compare target roles with the public GitHub profile, profile README, current
+  pins, and repository evidence; prioritize maintenance of strong existing
+  projects before proposing gap-filling portfolio projects.
 - Use direct URL extraction for public pages and browser control only for
   authenticated or JavaScript-heavy portals.
 

@@ -8,7 +8,13 @@ from personal_os.config import PersonalOSConfig
 from personal_os.ports.memory import MemoryRecordRef
 from personal_os.ports.search import SearchResponse, SearchSource
 from personal_os.ports.tasks import TaskRecord
-from personal_os.ports.work_evidence import RepositorySnapshot, WorkEvent
+from personal_os.ports.work_evidence import (
+    DeveloperProfile,
+    PortfolioRepository,
+    PortfolioSnapshot,
+    RepositorySnapshot,
+    WorkEvent,
+)
 from personal_os.services.hermes_orchestration import HermesOrchestrator
 from personal_os.services.process_notes import NoteProcessingResult
 
@@ -73,6 +79,39 @@ class FakeEvidence:
                 title="Add Hermes tools",
                 url=f"https://github.com/{full_name}/commit/abc",
                 occurred_at=NOW,
+            ),
+        )
+
+    async def get_portfolio(self, limit: int = 30):
+        return PortfolioSnapshot(
+            profile=DeveloperProfile(
+                username="abhinavohri",
+                url="https://github.com/abhinavohri",
+                name="Abhinav Ohri",
+                bio="Builder",
+                company=None,
+                blog="https://example.com",
+                location="India",
+                followers=10,
+                following=5,
+                public_repositories=3,
+            ),
+            profile_readme="# Hello",
+            repositories=(
+                PortfolioRepository(
+                    full_name="abhinavohri/personal-os",
+                    url="https://github.com/abhinavohri/personal-os",
+                    description="Career assistant",
+                    primary_language="Python",
+                    topics=("agents",),
+                    stars=2,
+                    forks=0,
+                    is_archived=False,
+                    is_fork=False,
+                    updated_at=NOW,
+                    pushed_at=NOW,
+                    is_pinned=True,
+                ),
             ),
         )
 
@@ -205,6 +244,18 @@ def test_repository_evidence_is_bounded_and_read_only() -> None:
     assert "Read-only" in result["action_boundary"]
 
 
+def test_portfolio_evidence_supports_profile_and_pin_coaching() -> None:
+    service, _, _ = _orchestrator()
+
+    result = asyncio.run(service.portfolio_evidence())
+
+    assert result["profile"]["username"] == "abhinavohri"
+    assert result["profile_readme"] == "# Hello"
+    assert result["repositories"][0]["is_pinned"] is True
+    assert "project ideas" in result["coaching_scope"]
+    assert "explicit user approval" in result["coaching_scope"]
+
+
 def test_task_progress_never_uses_write_method() -> None:
     service, _, _ = _orchestrator()
 
@@ -234,6 +285,7 @@ def test_mcp_surface_contains_no_consequential_write_tool() -> None:
         "personal_os_read_context",
         "personal_os_research_web",
         "personal_os_inspect_repository",
+        "personal_os_portfolio_evidence",
         "personal_os_task_progress",
         "personal_os_process_pending_notes",
     }

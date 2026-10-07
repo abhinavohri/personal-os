@@ -58,6 +58,11 @@ Known public pages are read directly; browser automation is reserved for
 authenticated or dynamic portals. Job applications, enrollment, purchases,
 messages, and submissions always require explicit approval.
 
+Career research may find recruiter contact routes, but only when professional
+contact information is explicitly published on an official company, recruiter,
+or public professional page. The system never guesses email patterns or seeks
+private contact details, and cold emails remain drafts until approved.
+
 Focus support begins with declared focus blocks, plan-aware check-ins, and a
 Parking Lot for distracting ideas. Passive browser or app monitoring is an
 optional later feature with local-first telemetry and an obvious pause control.
@@ -73,6 +78,8 @@ repository allowlist, Hermes can:
 - Use real development progress during daily and weekly reviews.
 - Suggest maintenance work such as documentation, issue triage, tests, or stale
   dependency updates.
+- Compare the public profile, profile README, owned repositories, and current
+  pins with target roles to propose an ordered portfolio improvement plan.
 
 GitHub starts read-only. Creating issues, opening pull requests, pushing code,
 merging, closing issues, or changing repository settings always requires
@@ -132,9 +139,9 @@ Then:
    allowlist to `config/system.yaml`.
 3. Export `GITHUB_TOKEN="$(gh auth token)"` and load the other values from
    `.env` into your shell or deployment secret manager.
-4. Configure Hermes to use Vertex AI, then register the local MCP server in
-   `apps/hermes`; web research uses Vertex AI Google Search grounding and does
-   not need a second search API key.
+4. Configure Hermes to use Vertex AI, then register the local MCP server using
+   the commands below; web research uses Vertex AI Google Search grounding and
+   does not need a second search API key.
 5. Create the Notion structure described in `docs/ARCHITECTURE.md` and share
    only that root page with the Notion integration.
 6. Create the dedicated Todoist project with `bootstrap_todoist.py`, save the
@@ -148,6 +155,33 @@ Then:
    structured GCS artifacts and idempotent Notion drafts.
 10. Run the personal interview and approve the first spine, lanes, and roadmap.
 11. Rehearse the weekly loop with test data before scheduling it.
+
+### Hermes
+
+Install the lean Hermes core from the official installer. Browser control can
+be added later when a specific authenticated or dynamic site requires it.
+
+```bash
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh -o /tmp/hermes-install.sh
+bash /tmp/hermes-install.sh --non-interactive --skip-browser --skip-computer-use
+
+hermes config set model.default google/gemini-3.8-flash
+hermes config set model.provider vertex
+hermes config set vertex.project_id YOUR_GCP_PROJECT_ID
+hermes config set vertex.region global
+
+hermes mcp add personal_os \
+  --command "$PWD/.venv/bin/python" \
+  --connect-timeout 30 \
+  --args "$PWD/apps/hermes/server.py"
+hermes mcp test personal_os
+```
+
+Choose **yes** when Hermes asks whether to enable all reviewed Personal OS
+tools. Hermes uses Google Application Default Credentials, so no Vertex API key
+is placed in its configuration. Start it from this repository with
+`hermes --in "$PWD"` so its terminal and code-review tools are scoped to the
+project you intend to work on.
 
 The provider adapters, configuration boundary, authenticated mobile scan
 uploader, local note processor, and bounded Hermes MCP tool server are
@@ -199,5 +233,5 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 
 The design, safety boundaries, provider-neutral ports, adapters, local scan
 uploader, idempotent local note processor, and Hermes MCP tools are implemented.
-The bucket and external workspaces are configured; Hermes host registration and
-scheduled jobs have not yet been completed.
+The primary local Hermes host is registered with Vertex AI; approval-gated
+write workflows and scheduled reviews have not yet been completed.

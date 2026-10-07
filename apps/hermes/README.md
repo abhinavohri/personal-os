@@ -6,6 +6,7 @@ small set of bounded tools:
 
 - read one named Notion context page;
 - run grounded web research with citations;
+- read the public GitHub profile, profile README, repositories, and pins;
 - inspect metadata, README text, and activity for an allowlisted GitHub repo;
 - read active and recently completed Todoist tasks; and
 - process pending notebook scans into review drafts.

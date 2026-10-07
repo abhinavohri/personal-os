@@ -165,6 +165,55 @@ class HermesOrchestrator:
             ),
         }
 
+    async def portfolio_evidence(self, repository_limit: int = 30) -> dict[str, object]:
+        """Read public profile evidence used for portfolio coaching."""
+        if not 1 <= repository_limit <= 100:
+            raise ValueError("repository_limit must be between 1 and 100")
+        snapshot = await self._work_evidence.get_portfolio(repository_limit)
+        profile = snapshot.profile
+        return {
+            "profile": {
+                "username": profile.username,
+                "url": profile.url,
+                "name": profile.name,
+                "bio": profile.bio,
+                "company": profile.company,
+                "blog": profile.blog,
+                "location": profile.location,
+                "followers": profile.followers,
+                "following": profile.following,
+                "public_repositories": profile.public_repositories,
+            },
+            "profile_readme": snapshot.profile_readme or "",
+            "repositories": [
+                {
+                    "full_name": repository.full_name,
+                    "url": repository.url,
+                    "description": repository.description,
+                    "primary_language": repository.primary_language,
+                    "topics": list(repository.topics),
+                    "stars": repository.stars,
+                    "forks": repository.forks,
+                    "is_archived": repository.is_archived,
+                    "is_fork": repository.is_fork,
+                    "updated_at": repository.updated_at.isoformat(),
+                    "pushed_at": (
+                        repository.pushed_at.isoformat()
+                        if repository.pushed_at
+                        else None
+                    ),
+                    "is_pinned": repository.is_pinned,
+                }
+                for repository in snapshot.repositories
+            ],
+            "coaching_scope": (
+                "Use this evidence with target roles and the Personal OS profile to rank "
+                "portfolio gaps, project ideas, profile README improvements, candidate pins, "
+                "and repositories needing deeper review. Do not change GitHub without "
+                "explicit user approval."
+            ),
+        }
+
     async def task_progress(self, completed_days: int = 14) -> dict[str, object]:
         """Read active and recently completed tasks from the Personal OS project."""
         if not 1 <= completed_days <= 90:

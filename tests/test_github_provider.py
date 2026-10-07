@@ -183,6 +183,70 @@ def test_missing_readme_returns_none() -> None:
     assert asyncio.run(run()) is None
 
 
+def test_public_portfolio_includes_profile_readme_repositories_and_pins() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path == "/users/octocat":
+            return httpx.Response(
+                200,
+                json={
+                    "login": "octocat",
+                    "html_url": "https://github.com/octocat",
+                    "name": "The Octocat",
+                    "bio": "Builds things",
+                    "company": "GitHub",
+                    "blog": "https://github.blog",
+                    "location": "Internet",
+                    "followers": 100,
+                    "following": 5,
+                    "public_repos": 2,
+                },
+            )
+        if path == "/users/octocat/repos":
+            return httpx.Response(
+                200,
+                json=[
+                    _portfolio_repo("octocat/octocat"),
+                    _portfolio_repo("octocat/personal-os"),
+                ],
+            )
+        if path == "/graphql":
+            return httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "user": {
+                            "pinnedItems": {
+                                "nodes": [
+                                    {"nameWithOwner": "octocat/personal-os"}
+                                ]
+                            }
+                        }
+                    }
+                },
+            )
+        if path == "/repos/octocat/octocat/readme":
+            return httpx.Response(200, text="# Octocat profile")
+        raise AssertionError(path)
+
+    async def run():
+        client = _client(handler)
+        provider = GitHubWorkEvidence("token", "octocat", (REPO,), client=client)
+        result = await provider.get_portfolio(20)
+        await client.aclose()
+        return result
+
+    result = asyncio.run(run())
+    assert result.profile.bio == "Builds things"
+    assert result.profile_readme == "# Octocat profile"
+    assert len(result.repositories) == 2
+    assert result.repositories[1].is_pinned is True
+    assert result.repositories[1].stars == 4
+    assert result.repositories[1].pushed_at == datetime(
+        2026, 10, 6, 10, tzinfo=UTC
+    )
+
+
 def _client(handler) -> httpx.AsyncClient:
     return httpx.AsyncClient(
         transport=httpx.MockTransport(handler), base_url="https://api.github.com"
@@ -223,4 +287,20 @@ def _release() -> dict:
         "html_url": f"https://github.com/{REPO}/releases/v0.1",
         "created_at": "2026-10-05T10:00:00Z",
         "published_at": "2026-10-05T10:00:00Z",
+    }
+
+
+def _portfolio_repo(full_name: str) -> dict:
+    return {
+        "full_name": full_name,
+        "html_url": f"https://github.com/{full_name}",
+        "description": "Portfolio project",
+        "language": "Python",
+        "topics": ["agents"],
+        "stargazers_count": 4,
+        "forks_count": 1,
+        "archived": False,
+        "fork": False,
+        "updated_at": "2026-10-07T10:00:00Z",
+        "pushed_at": "2026-10-06T10:00:00Z",
     }
