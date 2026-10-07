@@ -54,7 +54,36 @@ is visible to Hermes.
 Exit condition: a phone scan becomes a reviewed Notion inbox item while the
 original remains private in Cloud Storage.
 
-## Phase 6: personal planning
+## Phase 6: Hermes orchestration
+
+- Register provider-neutral tools for roadmap context, note processing,
+  Todoist drafts, GitHub evidence, and grounded web research.
+- Load the concise Agent Brief at session start.
+- Require explicit approval for durable memory changes, generated tasks, and
+  all consequential browser or GitHub actions.
+- Record corrections to extracted notes as feedback and propose prompt changes
+  rather than silently rewriting extraction behavior.
+
+Exit condition: Hermes can process a note, explain the resulting draft, and
+propose an approved next action without directly coupling to provider APIs.
+
+## Phase 7: career and learning
+
+- Add Learning Tracks, Topics, and Applications to the durable Notion model.
+- Import books, public course pages, syllabi, and user-provided course material.
+- Build prerequisite-aware learning plans with evidence and confidence per
+  topic.
+- Add retrieval practice, spaced review, mock interviews, and small practical
+  assessments.
+- Search periodically for relevant jobs and courses with citations; shortlist
+  by explicit criteria and never apply automatically.
+- Use direct URL extraction for public pages and browser control only for
+  authenticated or JavaScript-heavy portals.
+
+Exit condition: one learning track has an approved topic plan and revision
+queue, and one job search produces a cited, deduplicated shortlist.
+
+## Phase 8: personal planning
 
 - Collect the initial brain dump and personal resources.
 - Run the Hermes interview.
@@ -65,7 +94,7 @@ original remains private in Cloud Storage.
 Exit condition: the system contains an approved roadmap and a realistic first
 week of tasks.
 
-## Phase 7: closed loop
+## Phase 9: closed loop
 
 - Implement the weekly review workflow.
 - Schedule it at a user-approved time.
@@ -76,3 +105,14 @@ week of tasks.
 Exit condition: task progress, GitHub activity, and notes update the roadmap and
 generate the next week without duplicating tasks or silently changing strategic
 priorities.
+
+## Phase 10: optional focus coach
+
+- Start with explicit focus blocks, check-ins, work-in-progress limits, and a
+  one-click Parking Lot action for distractions.
+- Measure whether prompts are helpful before collecting activity telemetry.
+- If still useful, design opt-in local browser/app signals with pause and
+  retention controls.
+
+Exit condition: focus interventions are user-controlled, demonstrably useful,
+and do not require continuous invasive monitoring.

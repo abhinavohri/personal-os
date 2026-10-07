@@ -44,6 +44,24 @@ Notion contains outcomes and milestones. Todoist contains only the next small
 actions. Hermes reviews both and proposes changes; it does not silently change
 strategic priorities.
 
+## Career and learning support
+
+Personal OS is intended to manage more than software projects. Learning tracks
+can come from books, courses, an IIT syllabus, interview requirements, or a
+user-defined goal. The system breaks them into prerequisite-aware topics,
+tracks confidence and evidence, schedules retrieval-based revision, and uses
+approved notes and GitHub work to generate practice questions and interview
+preparation.
+
+Grounded web research can discover current jobs, courses, books, and papers.
+Known public pages are read directly; browser automation is reserved for
+authenticated or dynamic portals. Job applications, enrollment, purchases,
+messages, and submissions always require explicit approval.
+
+Focus support begins with declared focus blocks, plan-aware check-ins, and a
+Parking Lot for distracting ideas. Passive browser or app monitoring is an
+optional later feature with local-first telemetry and an obvious pause control.
+
 ## GitHub support
 
 GitHub is treated as evidence, not as the planning database. With an explicit

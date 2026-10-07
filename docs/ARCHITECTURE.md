@@ -111,6 +111,56 @@ activity, processed notes, roadmap state, and recent decisions. Hermes drafts a
 review and a proposed next week. Material roadmap changes and newly extracted
 tasks require user approval.
 
+## Career and learning
+
+The same planning loop supports employment, courses, books, and formal study:
+
+- **Learning tracks** define outcomes such as completing an IIT course,
+  preparing for an interview area, or working through a book.
+- **Topics** capture prerequisites, confidence, evidence, and the next review
+  date instead of treating course completion as proof of understanding.
+- **Resources** hold books, course pages, syllabi, papers, and videos.
+- **Applications** track job fit, evidence gaps, deadlines, status, and the next
+  action without permitting automatic applications.
+- Todoist receives current study, revision, interview, and application actions;
+  Notion retains the durable plan and progress evidence.
+- GitHub activity and approved paper notes provide evidence of practiced skills,
+  not just self-reported progress.
+
+Revision should be retrieval-based: Hermes proposes questions, mock interviews,
+small implementation exercises, and spaced review dates from approved material.
+It must distinguish completed content from demonstrated understanding.
+
+## Web and browser acquisition
+
+Use the least fragile acquisition method that can access the source:
+
+1. Vertex AI Google Search grounding discovers current jobs, courses, books,
+   papers, and official pages with source attribution.
+2. Direct URL retrieval extracts a known public job description, syllabus, or
+   course outline.
+3. Browser control is reserved for JavaScript-heavy or authenticated portals
+   that do not expose a suitable API or stable public page.
+4. The user can upload a syllabus, permitted PDF, screenshot, or table of
+   contents when automated retrieval is unavailable.
+
+Browser control starts read-only. Logging in requires the user to handle
+credentials and MFA, and consequential actions such as applying for a job,
+submitting coursework, enrolling, purchasing, or sending a message require
+explicit approval.
+
+## Focus guardrails
+
+The first focus feature is a deliberate check-in loop, not passive surveillance:
+Hermes asks for the current focus block, compares new work with the approved
+weekly plan, and offers to continue, deliberately switch, or park the diversion.
+It should enforce work-in-progress limits and preserve interesting distractions
+in the Parking Lot.
+
+Automatic app or browser activity monitoring is a later, opt-in feature. Any
+such telemetry must stay local by default, collect only the minimum needed, and
+have a visible pause control and retention limit.
+
 ## Security boundaries
 
 - Enforce public-access prevention and uniform bucket-level access on GCS.
