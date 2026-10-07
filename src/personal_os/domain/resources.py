@@ -31,6 +31,7 @@ ResourceSource = Literal[
     "web_research",
     "import",
 ]
+ResourceStatus = Literal["Inbox", "Active", "Reference", "Finished", "Archived"]
 
 
 class ResourceCapture(BaseModel):
@@ -64,7 +65,7 @@ class ResourceCapture(BaseModel):
 
 class ResourceRecord(ResourceCapture):
     resource_key: str
-    status: str = "Inbox"
+    status: ResourceStatus = "Inbox"
     notion_page_id: str
     notion_url: str | None = None
     added_at: datetime | None = None

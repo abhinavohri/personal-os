@@ -15,7 +15,7 @@ from personal_os.domain.plans import (
     PlanProposal,
     validate_daily_shape,
 )
-from personal_os.domain.resources import ResourceCapture, ResourceRecord
+from personal_os.domain.resources import ResourceCapture, ResourceRecord, ResourceStatus
 from personal_os.ports.memory import DurableMemory
 from personal_os.ports.plans import PlanProposalStore
 from personal_os.ports.reviews import ExecutionReviewSnapshot, ReviewStore
@@ -569,6 +569,23 @@ class HermesOrchestrator:
             "next_step": (
                 "Ask the user which groups or individual items should be active, reference, "
                 "or archived. Do not create tasks merely because a group is large."
+            ),
+        }
+
+    async def set_resource_status(
+        self,
+        resource_keys: tuple[str, ...],
+        status: ResourceStatus,
+    ) -> dict[str, object]:
+        """Apply an explicit conversational triage decision to named resources."""
+        records = await self._resources.set_status(resource_keys, status)
+        return {
+            "updated": [_resource_payload(record) for record in records],
+            "count": len(records),
+            "status": status,
+            "action_boundary": (
+                "Only resources explicitly identified by the user were changed. This does "
+                "not create tasks, alter the roadmap, or affect the original Chrome bookmarks."
             ),
         }
 

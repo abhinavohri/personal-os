@@ -231,6 +231,14 @@ class FakeResources:
     async def list_inbox(self, limit=50):
         return tuple(self.records.values())[:limit]
 
+    async def set_status(self, resource_keys, status):
+        result = []
+        for key in resource_keys:
+            record = self.records[key].model_copy(update={"status": status})
+            self.records[key] = record
+            result.append(record)
+        return tuple(result)
+
 
 def _config() -> PersonalOSConfig:
     return PersonalOSConfig.model_validate(
@@ -508,6 +516,19 @@ def test_mixed_resource_dump_is_captured_without_becoming_tasks() -> None:
     assert "do not publish tasks" in inbox["triage_policy"]
 
 
+def test_explicit_resource_status_change_is_bounded_and_does_not_create_tasks() -> None:
+    service, _, _ = _orchestrator()
+    item = ResourceCapture(title="Old comic", resource_type="book")
+    captured = asyncio.run(service.capture_resources((item,)))
+    key = captured["captured"][0]["resource_key"]
+
+    result = asyncio.run(service.set_resource_status((key,), "Archived"))
+
+    assert result["status"] == "Archived"
+    assert result["updated"][0]["title"] == "Old comic"
+    assert "does not create tasks" in result["action_boundary"]
+
+
 def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
     tools = asyncio.run(mcp.list_tools())
     names = {tool.name for tool in tools}
@@ -526,6 +547,7 @@ def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
         "personal_os_capture_resources",
         "personal_os_resource_inbox",
         "personal_os_resource_summary",
+        "personal_os_set_resource_status",
         "personal_os_process_pending_notes",
     }
     save_tool = next(

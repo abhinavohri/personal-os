@@ -172,6 +172,34 @@ def test_inbox_follows_cursor_pagination_beyond_one_hundred() -> None:
     assert records[-1].notion_page_id == "resource-119"
 
 
+def test_status_change_requires_known_keys_and_returns_updated_record() -> None:
+    patched: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if request.method == "GET":
+            return httpx.Response(200, json={"properties": _schema()})
+        if request.method == "POST" and path.endswith("/query"):
+            return httpx.Response(200, json={"results": [_page()]})
+        if request.method == "PATCH" and path == "/v1/pages/resource-page":
+            patched.update(json.loads(request.content)["properties"])
+            return httpx.Response(200, json=_page(status="Archived"))
+        raise AssertionError((request.method, path))
+
+    async def run():
+        client = _client(handler)
+        store = NotionResourceInbox("token", "resources", client=client)
+        records = await store.set_status(
+            ("url:https://youtube.com/playlist?list=abc",), "Archived"
+        )
+        await client.aclose()
+        return records
+
+    records = asyncio.run(run())
+    assert records[0].status == "Archived"
+    assert patched == {"Status": {"select": {"name": "Archived"}}}
+
+
 def _client(handler) -> httpx.AsyncClient:
     return httpx.AsyncClient(
         transport=httpx.MockTransport(handler),

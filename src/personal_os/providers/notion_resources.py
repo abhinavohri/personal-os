@@ -6,7 +6,12 @@ from typing import Any
 
 import httpx
 
-from personal_os.domain.resources import ResourceCapture, ResourceRecord, resource_key
+from personal_os.domain.resources import (
+    ResourceCapture,
+    ResourceRecord,
+    ResourceStatus,
+    resource_key,
+)
 from personal_os.providers.notion import NOTION_API_VERSION
 
 
@@ -135,6 +140,35 @@ class NotionResourceInbox:
             return tuple(_record(page) for page in results[:limit])
         except Exception as exc:
             raise NotionResourceInboxError("Could not read resource inbox") from exc
+
+    async def set_status(
+        self,
+        resource_keys: tuple[str, ...],
+        status: ResourceStatus,
+    ) -> tuple[ResourceRecord, ...]:
+        if not 1 <= len(resource_keys) <= 25:
+            raise ValueError("resource_keys must contain between 1 and 25 items")
+        if len(set(resource_keys)) != len(resource_keys):
+            raise ValueError("resource_keys must not contain duplicates")
+        await self._ensure_schema()
+        pages = await self._find_many(resource_keys)
+        missing = [key for key in resource_keys if key not in pages]
+        if missing:
+            raise NotionResourceInboxError(
+                f"Unknown resource keys: {', '.join(missing)}"
+            )
+        records: list[ResourceRecord] = []
+        try:
+            for key in resource_keys:
+                response = await self._request(
+                    "PATCH",
+                    f"/pages/{pages[key]['id']}",
+                    json={"properties": {"Status": {"select": {"name": status}}}},
+                )
+                records.append(_record(response.json()))
+            return tuple(records)
+        except Exception as exc:
+            raise NotionResourceInboxError("Could not update resource status") from exc
 
     async def _find_many(self, keys: tuple[str, ...]) -> dict[str, dict[str, Any]]:
         filters = [

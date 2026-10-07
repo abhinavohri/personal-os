@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from personal_os.domain.resources import ResourceCapture, ResourceRecord
+from personal_os.domain.resources import ResourceCapture, ResourceRecord, ResourceStatus
 
 
 class ResourceInbox(Protocol):
@@ -14,3 +14,9 @@ class ResourceInbox(Protocol):
     ) -> tuple[ResourceRecord, ...]: ...
 
     async def list_inbox(self, limit: int = 100) -> tuple[ResourceRecord, ...]: ...
+
+    async def set_status(
+        self,
+        resource_keys: tuple[str, ...],
+        status: ResourceStatus,
+    ) -> tuple[ResourceRecord, ...]: ...

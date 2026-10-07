@@ -79,6 +79,9 @@ mcp = MCPServer(
         "When the user pastes a mixed brain dump of books, links, playlists, topics, jobs, "
         "courses, languages, or bookmarks, normalize it and call personal_os_capture_resources "
         "in batches of at most 25. Capture is not commitment: do not schedule every inbox item. "
+        "Only call personal_os_set_resource_status when the user explicitly identifies the "
+        "items and intended status in the current conversation; never infer archive decisions "
+        "or call it from a scheduled job. "
         "For portfolio gaps, first consider a coherent feature addition to a relevant existing "
         "project; suggest a new project only when the gap does not credibly belong in existing "
         "work."
@@ -232,6 +235,16 @@ async def personal_os_resource_summary(
 ) -> dict[str, object]:
     """Summarize every inbox item by type and group, highlighting active and unclear items."""
     return await _orchestrator(ctx).resource_summary()
+
+
+@mcp.tool()
+async def personal_os_set_resource_status(
+    resource_keys: list[str],
+    status: Literal["Inbox", "Active", "Reference", "Finished", "Archived"],
+    ctx: Context[AppContext],
+) -> dict[str, object]:
+    """Set status for up to 25 resources explicitly identified by the user."""
+    return await _orchestrator(ctx).set_resource_status(tuple(resource_keys), status)
 
 
 @mcp.tool()

@@ -88,7 +88,9 @@ DATABASES: dict[str, tuple[str, str, dict[str, Any]]] = {
             "Status": {"select": {"options": [
                 {"name": "Inbox", "color": "yellow"},
                 {"name": "Active", "color": "blue"},
+                {"name": "Reference", "color": "gray"},
                 {"name": "Finished", "color": "green"},
+                {"name": "Archived", "color": "brown"},
             ]}},
             "Resource Key": {"rich_text": {}},
             "Notes": {"rich_text": {}},
