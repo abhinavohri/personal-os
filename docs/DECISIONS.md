@@ -27,6 +27,13 @@ dates, recurring work, and completion state.
 Google Drive is near its quota. A private GCS bucket provides a separate,
 automation-friendly archive for scans and extraction artifacts.
 
+### The scan uploader runs locally over Tailscale
+
+The laptop hosts the uploader on localhost. Tailscale Serve provides private
+HTTPS access to approved tailnet devices, and an application access key adds a
+second authorization layer. This avoids an always-on hosted server and keeps
+Google Cloud credentials on the laptop. Tailscale Funnel is not used.
+
 ### GitHub is an evidence source
 
 Selected repositories supplement the resume and provide objective progress

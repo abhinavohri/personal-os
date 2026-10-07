@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from apps.uploader.application import (
+    AccessKeyVerifier,
     UploaderSettings,
     VerifiedIdentity,
     create_app,
@@ -43,7 +44,10 @@ def test_public_shell_and_config_are_available() -> None:
     client, _ = _client()
 
     assert client.get("/healthz").json() == {"status": "ok"}
-    assert client.get("/api/config").json() == {"googleOAuthClientId": "client-id"}
+    assert client.get("/api/config").json() == {
+        "authMode": "google",
+        "googleOAuthClientId": "client-id",
+    }
     assert "Send a page" in client.get("/").text
 
 
@@ -57,6 +61,40 @@ def test_upload_requires_google_identity() -> None:
 
     assert response.status_code == 401
     assert store.saved is None
+
+
+def test_local_access_key_verifier_accepts_only_configured_key() -> None:
+    verifier = AccessKeyVerifier("private-key")
+
+    identity = verifier.verify("private-key")
+
+    assert identity.subject == "tailscale-device"
+    assert identity.email == "local@personal-os"
+
+
+def test_local_access_key_verifier_rejects_wrong_key() -> None:
+    verifier = AccessKeyVerifier("private-key")
+
+    try:
+        verifier.verify("wrong-key")
+    except PermissionError as exc:
+        assert str(exc) == "Invalid uploader access key"
+    else:
+        raise AssertionError("wrong access key was accepted")
+
+
+def test_local_settings_do_not_require_google_oauth() -> None:
+    settings = UploaderSettings.from_environment(
+        {
+            "GCP_PROJECT_ID": "project",
+            "PAPER_NOTES_BUCKET": "notes",
+            "UPLOADER_AUTH_MODE": "local",
+            "UPLOAD_ACCESS_KEY": "private-key",
+        }
+    )
+
+    assert settings.auth_mode == "local"
+    assert settings.google_oauth_client_id == ""
 
 
 def test_authenticated_scan_is_uploaded() -> None:

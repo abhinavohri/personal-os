@@ -1,6 +1,7 @@
 """FastAPI entry point for authenticated paper-note uploads."""
 
 import os
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Any, Mapping, Protocol
@@ -29,8 +30,10 @@ STATIC_DIR = Path(__file__).with_name("static")
 class UploaderSettings:
     project_id: str
     bucket: str
-    google_oauth_client_id: str
-    allowed_email: str
+    auth_mode: str = "google"
+    google_oauth_client_id: str = ""
+    allowed_email: str = ""
+    access_key: str = ""
     timezone: str = "Asia/Kolkata"
 
     @classmethod
@@ -38,11 +41,20 @@ class UploaderSettings:
         values = {
             "project_id": environment.get("GCP_PROJECT_ID", ""),
             "bucket": environment.get("PAPER_NOTES_BUCKET", ""),
+            "auth_mode": environment.get("UPLOADER_AUTH_MODE", "google").casefold(),
             "google_oauth_client_id": environment.get("GOOGLE_OAUTH_CLIENT_ID", ""),
             "allowed_email": environment.get("UPLOAD_ALLOWED_EMAIL", ""),
+            "access_key": environment.get("UPLOAD_ACCESS_KEY", ""),
             "timezone": environment.get("UPLOADER_TIMEZONE", "Asia/Kolkata"),
         }
-        missing = [name for name, value in values.items() if not value]
+        required = ["project_id", "bucket", "timezone"]
+        if values["auth_mode"] == "google":
+            required.extend(("google_oauth_client_id", "allowed_email"))
+        elif values["auth_mode"] == "local":
+            required.append("access_key")
+        else:
+            raise RuntimeError("UPLOADER_AUTH_MODE must be 'google' or 'local'")
+        missing = [name for name in required if not values[name]]
         if missing:
             raise RuntimeError(f"Missing uploader settings: {', '.join(missing)}")
         return cls(**values)
@@ -79,6 +91,16 @@ class GoogleTokenVerifier:
         return VerifiedIdentity(subject=str(claims["sub"]), email=email)
 
 
+class AccessKeyVerifier:
+    def __init__(self, access_key: str) -> None:
+        self._access_key = access_key
+
+    def verify(self, token: str) -> VerifiedIdentity:
+        if not secrets.compare_digest(token, self._access_key):
+            raise PermissionError("Invalid uploader access key")
+        return VerifiedIdentity(subject="tailscale-device", email="local@personal-os")
+
+
 def create_app(
     settings: UploaderSettings,
     *,
@@ -86,9 +108,7 @@ def create_app(
     token_verifier: TokenVerifier | None = None,
 ) -> FastAPI:
     store = object_store or GCSObjectStore(settings.project_id)
-    verifier = token_verifier or GoogleTokenVerifier(
-        settings.google_oauth_client_id, settings.allowed_email
-    )
+    verifier = token_verifier or _token_verifier(settings)
     uploads = NoteUploadService(store, settings.bucket, settings.timezone)
 
     app = FastAPI(title="Personal OS Scan Uploader", docs_url=None, redoc_url=None)
@@ -116,7 +136,10 @@ def create_app(
 
     @app.get("/api/config")
     def public_config() -> dict[str, str]:
-        return {"googleOAuthClientId": settings.google_oauth_client_id}
+        return {
+            "authMode": settings.auth_mode,
+            "googleOAuthClientId": settings.google_oauth_client_id,
+        }
 
     @app.post("/api/notes", status_code=201)
     def upload_notes(
@@ -157,11 +180,17 @@ def create_app(
 def _identity(authorization: str | None, verifier: TokenVerifier) -> VerifiedIdentity:
     scheme, _, token = (authorization or "").partition(" ")
     if scheme.casefold() != "bearer" or not token:
-        raise HTTPException(status_code=401, detail="Sign in with Google first")
+        raise HTTPException(status_code=401, detail="Unlock the uploader first")
     try:
         return verifier.verify(token)
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+def _token_verifier(settings: UploaderSettings) -> TokenVerifier:
+    if settings.auth_mode == "local":
+        return AccessKeyVerifier(settings.access_key)
+    return GoogleTokenVerifier(settings.google_oauth_client_id, settings.allowed_email)
 
 
 def _file_size(file: UploadFile) -> int:

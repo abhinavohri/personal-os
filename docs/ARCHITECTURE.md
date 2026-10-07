@@ -30,7 +30,8 @@ editing but should not require daily attention.
 
 ```text
 Phone scan
-  -> authenticated uploader
+  -> Tailscale private HTTPS
+  -> local authenticated uploader
   -> gs://<bucket>/inbox/<date>/<object>
   -> object-finalized event
   -> note processor
@@ -110,6 +111,9 @@ tasks require user approval.
 ## Security boundaries
 
 - Enforce public-access prevention and uniform bucket-level access on GCS.
+- Bind the local uploader only to localhost and expose it with Tailscale Serve,
+  never Tailscale Funnel.
+- Require an uploader access key in addition to tailnet device access.
 - Prefer Application Default Credentials over long-lived service-account keys.
 - Give each service account the minimum bucket and Vertex permissions required.
 - Keep secrets, personal exports, and scans outside Git.

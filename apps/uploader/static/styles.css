@@ -70,6 +70,25 @@ h1 {
 .panel-title { margin: 0 0 6px; font-weight: 700; }
 .muted { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
 .google-signin { min-height: 44px; }
+.local-signin label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 13px; }
+.key-row { display: flex; gap: 8px; }
+.key-row input {
+  min-width: 0;
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+}
+.key-row button {
+  padding: 12px 16px;
+  color: white;
+  background: var(--green);
+  border: 0;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
 
 .upload-form { margin-top: 30px; }
 .signed-in-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; color: var(--muted); font-size: 13px; }

@@ -78,6 +78,7 @@ You need:
 - A Todoist account and API token.
 - A GitHub account authenticated through the `gh` CLI or a narrowly scoped app.
 - Hermes Agent, Git, Google Cloud CLI, and the GitHub CLI on the host machine.
+- Tailscale on the host machine and phone for private uploader access.
 
 ### Local configuration
 
@@ -121,8 +122,8 @@ Then:
    printed ID in `config/system.yaml`, and verify it with `verify_todoist.py`.
 7. Add only the repositories you want the agent to read to the GitHub allowlist.
    Private repositories remain blocked unless you explicitly enable them.
-8. Create a Google OAuth Web client, configure the uploader variables described
-   in `apps/uploader/README.md`, and deploy the uploader to Cloud Run.
+8. Configure the local uploader variables described in `apps/uploader/README.md`,
+   start it on localhost, and publish it privately with Tailscale Serve.
 9. Run the personal interview and approve the first spine, lanes, and roadmap.
 10. Rehearse the weekly loop with test data before scheduling it.
 
@@ -172,7 +173,6 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 
 ## Project status
 
-The design, safety boundaries, provider-neutral ports, adapters, and scan
+The design, safety boundaries, provider-neutral ports, adapters, and local scan
 uploader are implemented. The bucket and external workspaces are configured;
-Cloud Run services, Hermes tools, note processing, and scheduled jobs have not
-yet been deployed.
+Hermes tools, note processing, and scheduled jobs have not yet been deployed.

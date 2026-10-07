@@ -1,5 +1,6 @@
 let idToken = "";
 let oauthClientId = "";
+let authMode = "local";
 
 const signinPanel = document.querySelector("#signin-panel");
 const uploadForm = document.querySelector("#upload-form");
@@ -8,16 +9,40 @@ const submitButton = document.querySelector("#submit");
 const message = document.querySelector("#message");
 const previewWrap = document.querySelector("#preview-wrap");
 const preview = document.querySelector("#preview");
+const localSignin = document.querySelector("#local-signin");
+const accessKeyInput = document.querySelector("#access-key");
 
 fetch("/api/config")
   .then((response) => response.json())
   .then((config) => {
+    authMode = config.authMode;
     oauthClientId = config.googleOAuthClientId;
-    initializeGoogleSignIn();
+    initializeAuthentication();
   })
   .catch(() => showMessage("Could not load uploader configuration.", "error"));
 
-window.addEventListener("load", initializeGoogleSignIn);
+function initializeAuthentication() {
+  if (authMode === "local") {
+    localSignin.hidden = false;
+    document.querySelector("#google-signin").hidden = true;
+    const savedKey = window.localStorage.getItem("personal-os-upload-key");
+    if (savedKey) unlockLocalUploader(savedKey);
+    return;
+  }
+
+  document.querySelector("#auth-title").textContent = "Sign in to continue";
+  document.querySelector("#auth-help").textContent = "Only your approved Google account can upload.";
+  loadGoogleSignIn();
+}
+
+function loadGoogleSignIn() {
+  if (window.google?.accounts?.id) return initializeGoogleSignIn();
+  const script = document.createElement("script");
+  script.src = "https://accounts.google.com/gsi/client";
+  script.async = true;
+  script.onload = initializeGoogleSignIn;
+  document.head.appendChild(script);
+}
 
 function initializeGoogleSignIn() {
   if (!oauthClientId || !window.google?.accounts?.id) return;
@@ -45,9 +70,30 @@ function handleCredential(response) {
   clearMessage();
 }
 
+localSignin.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const key = accessKeyInput.value.trim();
+  if (!key) return;
+  window.localStorage.setItem("personal-os-upload-key", key);
+  unlockLocalUploader(key);
+});
+
+function unlockLocalUploader(key) {
+  idToken = key;
+  document.querySelector("#account-label").textContent = "Private device";
+  signinPanel.hidden = true;
+  uploadForm.hidden = false;
+  clearMessage();
+}
+
 document.querySelector("#signout").addEventListener("click", () => {
   idToken = "";
-  google.accounts.id.disableAutoSelect();
+  if (authMode === "local") {
+    window.localStorage.removeItem("personal-os-upload-key");
+    accessKeyInput.value = "";
+  } else {
+    google.accounts.id.disableAutoSelect();
+  }
   uploadForm.hidden = true;
   signinPanel.hidden = false;
   fileInput.value = "";
@@ -106,6 +152,12 @@ uploadForm.addEventListener("submit", async (event) => {
       body: form,
     });
     const body = await response.json();
+    if (response.status === 401 || response.status === 403) {
+      window.localStorage.removeItem("personal-os-upload-key");
+      idToken = "";
+      uploadForm.hidden = true;
+      signinPanel.hidden = false;
+    }
     if (!response.ok) throw new Error(body.detail || "Upload failed");
     const noun = body.count === 1 ? "note" : "notes";
     showMessage(`Saved ${body.count} ${noun} privately.`, "success");

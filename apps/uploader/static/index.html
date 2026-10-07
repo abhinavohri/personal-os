@@ -7,7 +7,6 @@
     <title>Personal OS · Scan notes</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><circle cx=%2232%22 cy=%2232%22 r=%2232%22 fill=%22%231e5c43%22/><text x=%2232%22 y=%2242%22 text-anchor=%22middle%22 font-size=%2232%22 fill=%22white%22>P</text></svg>">
     <link rel="stylesheet" href="/static/styles.css">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="/static/app.js" defer></script>
   </head>
   <body>
@@ -28,9 +27,16 @@
         </div>
 
         <div id="signin-panel" class="panel">
-          <p class="panel-title">Sign in to continue</p>
-          <p class="muted">Only your approved Google account can upload.</p>
+          <p id="auth-title" class="panel-title">Unlock to continue</p>
+          <p id="auth-help" class="muted">Enter the private key for this uploader.</p>
           <div id="google-signin" class="google-signin"></div>
+          <form id="local-signin" class="local-signin" hidden>
+            <label for="access-key">Uploader access key</label>
+            <div class="key-row">
+              <input id="access-key" type="password" autocomplete="current-password" required>
+              <button type="submit">Unlock</button>
+            </div>
+          </form>
         </div>
 
         <form id="upload-form" class="upload-form" hidden>
@@ -39,7 +45,7 @@
               <span class="status-dot" aria-hidden="true"></span>
               <span id="account-label">Signed in</span>
             </div>
-            <button id="signout" class="text-button" type="button">Switch account</button>
+            <button id="signout" class="text-button" type="button">Lock</button>
           </div>
 
           <label class="drop-zone" for="scan">
