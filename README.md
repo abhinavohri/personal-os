@@ -210,6 +210,11 @@ tasks or changes the roadmap.
 Useful commands:
 
 ```bash
+# Friendly manual runs from this repository
+uv run python scripts/run_plan.py daily
+uv run python scripts/run_plan.py weekly
+
+# Scheduler administration
 hermes gateway status
 hermes cron list --all
 hermes cron run JOB_ID
