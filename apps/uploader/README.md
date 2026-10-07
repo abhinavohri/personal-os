@@ -35,6 +35,19 @@ Start the uploader. It binds only to localhost, not the Wi-Fi interface:
 uv run python scripts/start_uploader.py
 ```
 
+On macOS, install it as a user service after verifying the manual command:
+
+```bash
+uv run python scripts/install_uploader_service.py
+```
+
+The service starts at login and restarts after a crash. It does not run while
+the user is logged out, and the Mac must remain awake. To remove it:
+
+```bash
+uv run python scripts/install_uploader_service.py --uninstall
+```
+
 In another terminal, publish that local port only inside the tailnet:
 
 ```bash

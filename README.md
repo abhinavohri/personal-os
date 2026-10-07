@@ -123,7 +123,8 @@ Then:
 7. Add only the repositories you want the agent to read to the GitHub allowlist.
    Private repositories remain blocked unless you explicitly enable them.
 8. Configure the local uploader variables described in `apps/uploader/README.md`,
-   start it on localhost, and publish it privately with Tailscale Serve.
+   install its macOS user service, and publish it privately with Tailscale
+   Serve.
 9. Run the personal interview and approve the first spine, lanes, and roadmap.
 10. Rehearse the weekly loop with test data before scheduling it.
 
