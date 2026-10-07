@@ -44,6 +44,40 @@ class GCSObjectStore:
         except Exception as exc:
             raise ObjectStoreError(f"Could not read object metadata: {uri}") from exc
 
+    def exists(self, uri: str) -> bool:
+        location = parse_gcs_uri(uri)
+        try:
+            return self._client.bucket(location.bucket).get_blob(location.object_name) is not None
+        except Exception as exc:
+            raise ObjectStoreError(f"Could not check object existence: {uri}") from exc
+
+    def list(self, prefix_uri: str) -> tuple[StoredObject, ...]:
+        location = parse_gcs_uri(prefix_uri)
+        try:
+            blobs = self._client.list_blobs(
+                location.bucket,
+                prefix=location.object_name,
+            )
+            return tuple(
+                self._metadata(f"gs://{location.bucket}/{blob.name}", blob)
+                for blob in blobs
+                if not blob.name.endswith("/")
+            )
+        except Exception as exc:
+            raise ObjectStoreError(f"Could not list objects: {prefix_uri}") from exc
+
+    def get_bytes(self, uri: str) -> bytes:
+        location = parse_gcs_uri(uri)
+        try:
+            blob = self._client.bucket(location.bucket).get_blob(location.object_name)
+            if blob is None:
+                raise ObjectStoreError(f"Object does not exist: {uri}")
+            return blob.download_as_bytes()
+        except ObjectStoreError:
+            raise
+        except Exception as exc:
+            raise ObjectStoreError(f"Could not read object: {uri}") from exc
+
     def put_bytes(self, uri: str, data: bytes, content_type: str) -> StoredObject:
         location = parse_gcs_uri(uri)
         try:

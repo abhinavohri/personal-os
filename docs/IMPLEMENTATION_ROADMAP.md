@@ -47,7 +47,7 @@ is visible to Hermes.
 - Create the private Cloud Storage bucket.
 - Enable public-access prevention, uniform access, and soft delete.
 - Build the authenticated mobile uploader.
-- Build the event-driven note processor.
+- Build the local idempotent note processor.
 - Validate extraction against representative handwriting and diagrams.
 - Route low-confidence content to manual review.
 

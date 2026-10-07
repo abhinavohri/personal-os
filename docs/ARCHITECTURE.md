@@ -33,10 +33,9 @@ Phone scan
   -> Tailscale private HTTPS
   -> local authenticated uploader
   -> gs://<bucket>/inbox/<date>/<object>
-  -> object-finalized event
-  -> note processor
+  -> local note processor
   -> Vertex AI structured extraction
-  -> extracted JSON/Markdown in Cloud Storage
+  -> extracted JSON in Cloud Storage
   -> draft item in Notion Notes Inbox
   -> user approval in Hermes
   -> durable memory, roadmap update, or Todoist task
@@ -44,6 +43,10 @@ Phone scan
 
 Unclear handwriting must be flagged. The system must retain the original scan
 and must not silently convert low-confidence text into tasks or durable memory.
+
+The local processor uses deterministic `extracted/` and `processed/` artifact
+paths. It also checks Notion by source object before creating a draft so retries
+do not duplicate model calls or inbox entries.
 
 ## Notion structure
 

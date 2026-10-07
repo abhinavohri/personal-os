@@ -14,10 +14,12 @@ class FakeBlob:
         self.content_type = "image/jpeg"
         self.updated = datetime(2026, 10, 6, tzinfo=UTC)
         self.upload = None
+        self.data = b""
         self.metadata = None
 
     def upload_from_string(self, data: bytes, *, content_type: str) -> None:
         self.upload = (data, content_type)
+        self.data = data
         self.size = len(data)
         self.content_type = content_type
 
@@ -38,6 +40,9 @@ class FakeBlob:
 
     def reload(self) -> None:
         pass
+
+    def download_as_bytes(self) -> bytes:
+        return self.data
 
 
 class FakeBucket:
@@ -66,6 +71,13 @@ class FakeClient:
     def bucket(self, name: str) -> FakeBucket:
         return self.buckets.setdefault(name, FakeBucket(name))
 
+    def list_blobs(self, bucket: str, *, prefix: str):
+        return [
+            blob
+            for name, blob in self.bucket(bucket).blobs.items()
+            if name.startswith(prefix)
+        ]
+
 
 def test_parse_gcs_uri_requires_an_object() -> None:
     assert parse_gcs_uri("gs://notes/inbox/page.jpg").object_name == "inbox/page.jpg"
@@ -84,6 +96,20 @@ def test_put_stat_and_copy() -> None:
     assert found.size == 4
     assert copied.uri == "gs://notes/processed/page.jpg"
     assert copied.content_type == "image/jpeg"
+
+
+def test_list_exists_and_get_bytes() -> None:
+    client = FakeClient()
+    store = GCSObjectStore("project", client=client)
+    store.put_bytes("gs://notes/inbox/page.jpg", b"scan", "image/jpeg")
+    store.put_bytes("gs://notes/processed/page.json", b"{}", "application/json")
+
+    listed = store.list("gs://notes/inbox/")
+
+    assert tuple(item.uri for item in listed) == ("gs://notes/inbox/page.jpg",)
+    assert store.exists("gs://notes/inbox/page.jpg")
+    assert not store.exists("gs://notes/inbox/missing.jpg")
+    assert store.get_bytes("gs://notes/inbox/page.jpg") == b"scan"
 
 
 def test_put_file_uses_create_only_precondition_and_metadata() -> None:

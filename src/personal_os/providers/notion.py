@@ -76,10 +76,27 @@ class NotionMemory:
                 self._title_property: {
                     "type": "title",
                     "title": [{"type": "text", "text": {"content": title[:2000]}}],
-                }
+                },
+                "Status": {"type": "select", "select": {"name": "Draft"}},
+                "Confidence": {"type": "number", "number": note.confidence},
+                "Needs Review": {"type": "checkbox", "checkbox": note.needs_review},
+                "Source Object": {
+                    "type": "rich_text",
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {"content": note.source_object[:2000]},
+                        }
+                    ],
+                },
             },
             "children": [_paragraph(chunk) for chunk in _chunks(content, 2000)],
         }
+        if note.page_date:
+            payload["properties"]["Page Date"] = {
+                "type": "date",
+                "date": {"start": note.page_date.isoformat()},
+            }
         try:
             response = await self._client.post("/pages", json=payload)
             response.raise_for_status()
@@ -87,6 +104,27 @@ class NotionMemory:
             return MemoryRecordRef(id=body["id"], url=body.get("url"))
         except Exception as exc:
             raise NotionMemoryError("Could not create Notion note draft") from exc
+
+    async def find_note_by_source(self, source_object: str) -> MemoryRecordRef | None:
+        payload = {
+            "filter": {
+                "property": "Source Object",
+                "rich_text": {"equals": source_object},
+            },
+            "page_size": 1,
+        }
+        try:
+            response = await self._client.post(
+                f"/data_sources/{self._notes_data_source_id}/query",
+                json=payload,
+            )
+            response.raise_for_status()
+            results = response.json().get("results", [])
+            if not results:
+                return None
+            return MemoryRecordRef(id=results[0]["id"], url=results[0].get("url"))
+        except Exception as exc:
+            raise NotionMemoryError("Could not query Notion note drafts") from exc
 
     async def close(self) -> None:
         if self._owner:

@@ -8,7 +8,7 @@ evidence; and handwritten notes are scanned into private Cloud Storage.
 ## How it works
 
 ```text
-Paper notes -> Cloud Storage -> Vertex AI extraction -> Notion Notes Inbox
+Paper notes -> Cloud Storage -> local worker -> Vertex AI -> Notion Notes Inbox
 
 GitHub activity -----+
 Todoist progress ----+-> Hermes weekly review -> Notion roadmap -> next tasks
@@ -125,8 +125,10 @@ Then:
 8. Configure the local uploader variables described in `apps/uploader/README.md`,
    install its macOS user service, and publish it privately with Tailscale
    Serve.
-9. Run the personal interview and approve the first spine, lanes, and roadmap.
-10. Rehearse the weekly loop with test data before scheduling it.
+9. Run `uv run python scripts/process_notes.py` to convert pending scans into
+   structured GCS artifacts and idempotent Notion drafts.
+10. Run the personal interview and approve the first spine, lanes, and roadmap.
+11. Rehearse the weekly loop with test data before scheduling it.
 
 The provider adapters, configuration boundary, and authenticated mobile scan
 uploader are implemented and covered by isolated tests. Deployment, Hermes tool
@@ -174,6 +176,7 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 
 ## Project status
 
-The design, safety boundaries, provider-neutral ports, adapters, and local scan
-uploader are implemented. The bucket and external workspaces are configured;
-Hermes tools, note processing, and scheduled jobs have not yet been deployed.
+The design, safety boundaries, provider-neutral ports, adapters, local scan
+uploader, and idempotent local note processor are implemented. The bucket and
+external workspaces are configured; Hermes tools and scheduled jobs have not
+yet been deployed.
