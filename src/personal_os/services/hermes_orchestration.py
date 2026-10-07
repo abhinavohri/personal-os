@@ -572,6 +572,21 @@ class HermesOrchestrator:
             ),
         }
 
+    async def active_resources(self, limit: int = 50) -> dict[str, object]:
+        """Read the deliberately activated career and learning inputs."""
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        records = await self._resources.list_by_status("Active", limit)
+        return {
+            "resources": [_resource_payload(record) for record in records],
+            "count": len(records),
+            "planning_policy": (
+                "Active resources are planning inputs, not one task each. Respect mandatory "
+                "course deadlines, keep language recovery small and recurring, and connect "
+                "career preparation to demonstrable projects and interview evidence."
+            ),
+        }
+
     async def set_resource_status(
         self,
         resource_keys: tuple[str, ...],

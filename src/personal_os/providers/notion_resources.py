@@ -113,6 +113,13 @@ class NotionResourceInbox:
             raise NotionResourceInboxError("Could not save resource inbox") from exc
 
     async def list_inbox(self, limit: int = 100) -> tuple[ResourceRecord, ...]:
+        return await self.list_by_status("Inbox", limit)
+
+    async def list_by_status(
+        self,
+        status: ResourceStatus,
+        limit: int = 100,
+    ) -> tuple[ResourceRecord, ...]:
         if not 1 <= limit <= 500:
             raise ValueError("limit must be between 1 and 500")
         await self._ensure_schema()
@@ -121,7 +128,7 @@ class NotionResourceInbox:
             cursor: str | None = None
             while len(results) < limit:
                 body: dict[str, Any] = {
-                    "filter": {"property": "Status", "select": {"equals": "Inbox"}},
+                    "filter": {"property": "Status", "select": {"equals": status}},
                     "sorts": [{"property": "Added At", "direction": "descending"}],
                     "page_size": min(100, limit - len(results)),
                 }

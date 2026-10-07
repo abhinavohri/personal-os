@@ -15,6 +15,12 @@ class ResourceInbox(Protocol):
 
     async def list_inbox(self, limit: int = 100) -> tuple[ResourceRecord, ...]: ...
 
+    async def list_by_status(
+        self,
+        status: ResourceStatus,
+        limit: int = 100,
+    ) -> tuple[ResourceRecord, ...]: ...
+
     async def set_status(
         self,
         resource_keys: tuple[str, ...],

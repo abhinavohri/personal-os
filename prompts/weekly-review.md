@@ -5,6 +5,8 @@ Asia/Kolkata. This replaces the ordinary daily run on Sunday.
 
 1. Read `agent_brief`, `profile`, `spine`, `interests_and_lanes`, and
    `current_week` with `personal_os_read_context`.
+   Read `personal_os_active_resources` and distinguish mandatory course work
+   from optional references and exploratory bookmarks.
 2. Run `personal_os_execution_review` with a 28-day window.
 3. Save the evidence snapshot with
    `personal_os_save_execution_review_draft` using the same window.

@@ -231,6 +231,11 @@ class FakeResources:
     async def list_inbox(self, limit=50):
         return tuple(self.records.values())[:limit]
 
+    async def list_by_status(self, status, limit=100):
+        return tuple(
+            record for record in self.records.values() if record.status == status
+        )[:limit]
+
     async def set_status(self, resource_keys, status):
         result = []
         for key in resource_keys:
@@ -529,6 +534,20 @@ def test_explicit_resource_status_change_is_bounded_and_does_not_create_tasks() 
     assert "does not create tasks" in result["action_boundary"]
 
 
+def test_active_resources_are_available_to_the_planner() -> None:
+    service, _, _ = _orchestrator()
+    item = ResourceCapture(title="French recovery", resource_type="language")
+    captured = asyncio.run(service.capture_resources((item,)))
+    key = captured["captured"][0]["resource_key"]
+    asyncio.run(service.set_resource_status((key,), "Active"))
+
+    result = asyncio.run(service.active_resources())
+
+    assert result["count"] == 1
+    assert result["resources"][0]["title"] == "French recovery"
+    assert "not one task each" in result["planning_policy"]
+
+
 def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
     tools = asyncio.run(mcp.list_tools())
     names = {tool.name for tool in tools}
@@ -547,6 +566,7 @@ def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
         "personal_os_capture_resources",
         "personal_os_resource_inbox",
         "personal_os_resource_summary",
+        "personal_os_active_resources",
         "personal_os_set_resource_status",
         "personal_os_process_pending_notes",
     }

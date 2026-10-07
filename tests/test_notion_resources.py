@@ -200,6 +200,32 @@ def test_status_change_requires_known_keys_and_returns_updated_record() -> None:
     assert patched == {"Status": {"select": {"name": "Archived"}}}
 
 
+def test_list_by_status_uses_requested_status_filter() -> None:
+    requested_filter: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, json={"properties": _schema()})
+        if request.method == "POST" and request.url.path.endswith("/query"):
+            requested_filter.update(json.loads(request.content)["filter"])
+            return httpx.Response(200, json={"results": [_page(status="Active")]})
+        raise AssertionError((request.method, request.url.path))
+
+    async def run():
+        client = _client(handler)
+        store = NotionResourceInbox("token", "resources", client=client)
+        records = await store.list_by_status("Active", 10)
+        await client.aclose()
+        return records
+
+    records = asyncio.run(run())
+    assert records[0].status == "Active"
+    assert requested_filter == {
+        "property": "Status",
+        "select": {"equals": "Active"},
+    }
+
+
 def _client(handler) -> httpx.AsyncClient:
     return httpx.AsyncClient(
         transport=httpx.MockTransport(handler),

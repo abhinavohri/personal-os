@@ -238,6 +238,14 @@ async def personal_os_resource_summary(
 
 
 @mcp.tool()
+async def personal_os_active_resources(
+    ctx: Context[AppContext], limit: int = 50
+) -> dict[str, object]:
+    """Read explicitly activated career, course, language, and learning inputs."""
+    return await _orchestrator(ctx).active_resources(limit)
+
+
+@mcp.tool()
 async def personal_os_set_resource_status(
     resource_keys: list[str],
     status: Literal["Inbox", "Active", "Reference", "Finished", "Archived"],
