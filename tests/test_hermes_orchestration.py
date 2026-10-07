@@ -242,6 +242,8 @@ def test_repository_evidence_is_bounded_and_read_only() -> None:
     assert result["readme_truncated"] is True
     assert result["activity"][0]["kind"] == "commit"
     assert "Read-only" in result["action_boundary"]
+    assert "concrete feature" in result["coaching_scope"]
+    assert "smallest credible milestone" in result["coaching_scope"]
 
 
 def test_portfolio_evidence_supports_profile_and_pin_coaching() -> None:
@@ -252,7 +254,8 @@ def test_portfolio_evidence_supports_profile_and_pin_coaching() -> None:
     assert result["profile"]["username"] == "abhinavohri"
     assert result["profile_readme"] == "# Hello"
     assert result["repositories"][0]["is_pinned"] is True
-    assert "project ideas" in result["coaching_scope"]
+    assert "feature additions" in result["coaching_scope"]
+    assert "only then new project ideas" in result["coaching_scope"]
     assert "explicit user approval" in result["coaching_scope"]
 
 

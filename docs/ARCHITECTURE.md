@@ -95,8 +95,12 @@ Portfolio coaching adds the user's public GitHub profile, profile README, owned
 public repositories, and current pinned repositories. Hermes compares that
 evidence with target roles and recommends a sequence: fix an existing project's
 architecture or documentation when it already demonstrates the needed skill,
-then propose a new project only when a meaningful evidence gap remains. Profile
-README edits, pin changes, and repository changes remain approval-gated.
+extend a relevant existing project with a focused feature when that naturally
+demonstrates a missing skill, then propose a new project only when a meaningful
+evidence gap cannot credibly fit existing work. Every feature recommendation
+should name the target skill, the smallest credible milestone, and the evidence
+to add to the README. Profile README edits, pin changes, and repository changes
+remain approval-gated.
 
 GitHub is not the source of strategic truth; Notion remains authoritative for
 goals and roadmap state. GitHub write actions—including pushes, issues, pull

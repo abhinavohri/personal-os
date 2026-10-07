@@ -80,6 +80,8 @@ repository allowlist, Hermes can:
   dependency updates.
 - Compare the public profile, profile README, owned repositories, and current
   pins with target roles to propose an ordered portfolio improvement plan.
+- Recommend focused features for relevant existing projects when they can
+  demonstrate a missing target-role skill more credibly than another new repo.
 
 GitHub starts read-only. Creating issues, opening pull requests, pushing code,
 merging, closing issues, or changing repository settings always requires

@@ -163,6 +163,13 @@ class HermesOrchestrator:
                 "Read-only evidence. Repository edits, pushes, issues, pull requests, "
                 "pins, and settings changes require explicit user approval."
             ),
+            "coaching_scope": (
+                "Assess whether this project should be maintained, extended, or left alone. "
+                "When a target-role skill gap fits the project, suggest a concrete feature "
+                "that demonstrates that skill, explain why it belongs here, and define the "
+                "smallest credible milestone plus README evidence. Prefer this over proposing "
+                "a disconnected new project."
+            ),
         }
 
     async def portfolio_evidence(self, repository_limit: int = 30) -> dict[str, object]:
@@ -208,9 +215,11 @@ class HermesOrchestrator:
             ],
             "coaching_scope": (
                 "Use this evidence with target roles and the Personal OS profile to rank "
-                "portfolio gaps, project ideas, profile README improvements, candidate pins, "
-                "and repositories needing deeper review. Do not change GitHub without "
-                "explicit user approval."
+                "portfolio gaps, feature additions to relevant existing projects, profile "
+                "README improvements, candidate pins, repositories needing deeper review, "
+                "and only then new project ideas for gaps that cannot credibly fit existing "
+                "work. Tie each recommendation to a target-role skill and observable evidence. "
+                "Do not change GitHub without explicit user approval."
             ),
         }
 
