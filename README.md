@@ -132,8 +132,9 @@ Then:
    allowlist to `config/system.yaml`.
 3. Export `GITHUB_TOKEN="$(gh auth token)"` and load the other values from
    `.env` into your shell or deployment secret manager.
-4. Configure Hermes to use Vertex AI; web research uses Vertex AI Google Search
-   grounding and does not need a second search API key.
+4. Configure Hermes to use Vertex AI, then register the local MCP server in
+   `apps/hermes`; web research uses Vertex AI Google Search grounding and does
+   not need a second search API key.
 5. Create the Notion structure described in `docs/ARCHITECTURE.md` and share
    only that root page with the Notion integration.
 6. Create the dedicated Todoist project with `bootstrap_todoist.py`, save the
@@ -148,10 +149,11 @@ Then:
 10. Run the personal interview and approve the first spine, lanes, and roadmap.
 11. Rehearse the weekly loop with test data before scheduling it.
 
-The provider adapters, configuration boundary, and authenticated mobile scan
-uploader are implemented and covered by isolated tests. Deployment, Hermes tool
-registration, the note-processing event handler, and end-to-end workflows
-remain to be built.
+The provider adapters, configuration boundary, authenticated mobile scan
+uploader, local note processor, and bounded Hermes MCP tool server are
+implemented and covered by isolated tests. Hermes host installation, recurring
+jobs, approval-gated write workflows, and full end-to-end reviews remain to be
+built.
 
 Application code loads non-secret provider settings with
 `PersonalOSConfig.from_yaml("config/system.yaml")`, loads tokens with
@@ -179,6 +181,7 @@ allowance may incur usage-based costs.
 
 ```text
 apps/uploader/              Authenticated phone-friendly scan uploader
+apps/hermes/                Bounded local MCP tools for Hermes
 services/note-processor/    Event-driven handwriting extraction
 config/                     Safe configuration templates
 infra/                      GCP infrastructure definitions
@@ -195,6 +198,6 @@ should also read the [engineering guide](docs/ENGINEERING.md).
 ## Project status
 
 The design, safety boundaries, provider-neutral ports, adapters, local scan
-uploader, and idempotent local note processor are implemented. The bucket and
-external workspaces are configured; Hermes tools and scheduled jobs have not
-yet been deployed.
+uploader, idempotent local note processor, and Hermes MCP tools are implemented.
+The bucket and external workspaces are configured; Hermes host registration and
+scheduled jobs have not yet been completed.

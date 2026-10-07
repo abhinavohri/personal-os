@@ -149,6 +149,12 @@ credentials and MFA, and consequential actions such as applying for a job,
 submitting coursework, enrolling, purchasing, or sending a message require
 explicit approval.
 
+Recruiter discovery follows an additional privacy boundary: the system may
+surface professional contact information explicitly published on an official
+company, recruiter, or individual's public professional page. It must not guess
+email patterns, infer private addresses, or collect personal contact details.
+Cold outreach remains a draft until the user explicitly approves sending it.
+
 ## Focus guardrails
 
 The first focus feature is a deliberate check-in loop, not passive surveillance:
