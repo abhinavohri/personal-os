@@ -3,13 +3,20 @@
 import asyncio
 from collections import Counter
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Literal, Protocol
 from zoneinfo import ZoneInfo
 
 from personal_os.config import PersonalOSConfig
 from personal_os.domain.planning import ExecutionObservation, assess_execution
+from personal_os.domain.plans import (
+    PlanActionInput,
+    PlanCadence,
+    PlanProposal,
+    validate_daily_shape,
+)
 from personal_os.ports.memory import DurableMemory
+from personal_os.ports.plans import PlanProposalStore
 from personal_os.ports.reviews import ExecutionReviewSnapshot, ReviewStore
 from personal_os.ports.search import WebSearch
 from personal_os.ports.tasks import TaskRecord, TaskStore
@@ -45,6 +52,7 @@ class HermesOrchestrator:
         tasks: TaskStore,
         note_processor: PendingNoteProcessor,
         reviews: ReviewStore,
+        plans: PlanProposalStore,
         *,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
@@ -55,6 +63,7 @@ class HermesOrchestrator:
         self._tasks = tasks
         self._note_processor = note_processor
         self._reviews = reviews
+        self._plans = plans
         self._clock = clock or (lambda: datetime.now(UTC))
         self._context_pages = {
             "agent_brief": config.notion.agent_brief_page_id,
@@ -409,6 +418,45 @@ class HermesOrchestrator:
             ),
         }
 
+    async def save_plan_proposal(
+        self,
+        plan_date: date,
+        cadence: PlanCadence,
+        rationale: str,
+        actions: tuple[PlanActionInput, ...],
+    ) -> dict[str, object]:
+        """Create or revise an inert, versioned executable-plan draft."""
+        validate_daily_shape(
+            actions,
+            max_core=self._config.planning.max_core_tasks_per_day,
+            max_optional=self._config.planning.max_optional_tasks_per_day,
+        )
+        proposal = PlanProposal(
+            proposal_key=f"{cadence}:{plan_date.isoformat()}",
+            plan_date=plan_date,
+            cadence=cadence,
+            rationale=rationale.strip(),
+            actions=actions,
+        )
+        return _plan_payload(await self._plans.upsert_draft(proposal))
+
+    async def latest_plan_proposal(self) -> dict[str, object]:
+        """Read the latest unpublished plan for conversational review."""
+        proposal = await self._plans.latest_draft()
+        if proposal is None:
+            return {
+                "proposal": None,
+                "message": "No unpublished plan proposal is available.",
+            }
+        return {
+            "proposal": _plan_payload(proposal),
+            "review_instruction": (
+                "Review or edit this draft conversationally. Nothing has been added to "
+                "Todoist. Publishing requires the exact approval phrase returned with the "
+                "proposal."
+            ),
+        }
+
     async def process_pending_notes(self, limit: int = 10) -> dict[str, object]:
         """Process scans into extraction artifacts and Notion review drafts."""
         if not 1 <= limit <= 10:
@@ -444,5 +492,28 @@ def _task_payload(task: TaskRecord) -> dict[str, object]:
         "created_at": task.created_at.isoformat() if task.created_at else None,
         "completed_at": (
             task.completed_at.isoformat() if task.completed_at else None
+        ),
+    }
+
+
+def _plan_payload(proposal: PlanProposal) -> dict[str, object]:
+    return {
+        "proposal_key": proposal.proposal_key,
+        "plan_date": proposal.plan_date.isoformat(),
+        "cadence": proposal.cadence,
+        "status": proposal.status,
+        "version": proposal.version,
+        "rationale": proposal.rationale,
+        "actions": [action.model_dump(mode="json") for action in proposal.actions],
+        "notion_page_id": proposal.notion_page_id,
+        "notion_url": proposal.notion_url,
+        "todoist_task_ids": list(proposal.todoist_task_ids),
+        "published_at": (
+            proposal.published_at.isoformat() if proposal.published_at else None
+        ),
+        "approval_phrase": f"APPROVE {proposal.proposal_key}",
+        "action_boundary": (
+            "Draft only. No Todoist task exists until the user gives the exact approval "
+            "phrase in an interactive Hermes conversation. Scheduled jobs must never approve."
         ),
     }

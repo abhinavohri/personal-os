@@ -27,6 +27,7 @@ notion:
   repository_catalog_data_source_id: replace-me
   decisions_data_source_id: replace-me
   weekly_reviews_data_source_id: replace-me
+  plan_proposals_data_source_id: replace-me
 
 todoist:
   project_id: replace-me

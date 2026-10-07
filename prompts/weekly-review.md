@@ -12,6 +12,10 @@ Asia/Kolkata. This replaces the ordinary daily run on Sunday.
 5. Compare observed completions, overdue and rolled-over work, GitHub evidence,
    blockers, and prior review history. Do not ask for an estimate of available
    weekly hours.
+6. Save the deliberately conservative first action set with
+   `personal_os_save_plan_proposal` using cadence `weekly`, today's local date,
+   and no more than two core plus one optional action. Put broader weekly
+   outcomes in the rationale and give each executable action a due date.
 
 Return a draft containing:
 
@@ -26,5 +30,5 @@ Return a draft containing:
 
 Adjust task size, order, scope, and work in progress before changing strategic
 outcomes. Do not publish Todoist tasks, mutate the roadmap, send outreach, apply
-to jobs, or change GitHub. End by stating that the weekly plan is a draft
-awaiting approval.
+to jobs, or change GitHub. Never call a publication tool from a scheduled run.
+End by stating that the weekly plan is saved as a draft awaiting approval.

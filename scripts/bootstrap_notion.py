@@ -144,6 +144,28 @@ DATABASES: dict[str, tuple[str, str, dict[str, Any]]] = {
             "GitHub Events": {"number": {}},
         },
     ),
+    "plan_proposals_data_source_id": (
+        "Plan Proposals",
+        "Versioned executable plans. Drafts are inert until explicitly approved in Hermes.",
+        {
+            "Name": {"title": {}},
+            "Proposal Key": {"rich_text": {}},
+            "Plan Date": {"date": {}},
+            "Cadence": {"select": {"options": [
+                {"name": "Daily", "color": "blue"},
+                {"name": "Weekly", "color": "purple"},
+            ]}},
+            "Status": {"select": {"options": [
+                {"name": "Draft", "color": "yellow"},
+                {"name": "Published", "color": "green"},
+            ]}},
+            "Version": {"number": {}},
+            "Rationale": {"rich_text": {}},
+            "Actions JSON": {"rich_text": {}},
+            "Todoist Task IDs": {"rich_text": {}},
+            "Published At": {"date": {}},
+        },
+    ),
 }
 
 

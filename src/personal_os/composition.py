@@ -7,6 +7,7 @@ from personal_os.providers.gcs import GCSObjectStore
 from personal_os.providers.github import GitHubWorkEvidence
 from personal_os.providers.notion import NotionMemory
 from personal_os.providers.notion_repository_catalog import NotionRepositoryCatalog
+from personal_os.providers.notion_plans import NotionPlanStore
 from personal_os.providers.notion_reviews import NotionReviewStore
 from personal_os.providers.todoist import TodoistTaskStore
 from personal_os.providers.vertex import VertexStructuredLLM
@@ -21,6 +22,7 @@ class AdapterSuite:
     memory: NotionMemory
     repository_catalog: NotionRepositoryCatalog
     reviews: NotionReviewStore
+    plans: NotionPlanStore
     tasks: TodoistTaskStore
     work_evidence: GitHubWorkEvidence
     llm: VertexStructuredLLM
@@ -30,6 +32,7 @@ class AdapterSuite:
         await self.memory.close()
         await self.repository_catalog.close()
         await self.reviews.close()
+        await self.plans.close()
         await self.tasks.close()
         await self.work_evidence.close()
         await self.llm.close()
@@ -56,6 +59,10 @@ def build_adapters(config: PersonalOSConfig, secrets: RuntimeSecrets) -> Adapter
         reviews=NotionReviewStore(
             secrets.notion_token,
             config.notion.weekly_reviews_data_source_id,
+        ),
+        plans=NotionPlanStore(
+            secrets.notion_token,
+            config.notion.plan_proposals_data_source_id,
         ),
         tasks=TodoistTaskStore(secrets.todoist_api_token),
         work_evidence=GitHubWorkEvidence(

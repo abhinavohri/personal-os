@@ -11,6 +11,9 @@ Asia/Kolkata. This is a fresh scheduled session.
 4. Use observed execution, overdue work, rollovers, GitHub evidence, hard
    deadlines, and approved strategic context. Do not ask for an estimate of
    available weekly hours.
+5. Save the final structured draft with `personal_os_save_plan_proposal` using
+   cadence `daily`, today's local date, and no more than two core plus one
+   optional action. Every action must have a concrete due date.
 
 Return a concise draft containing:
 
@@ -23,4 +26,5 @@ Return a concise draft containing:
 
 Prefer shrinking or reordering existing work over adding more. Do not create or
 edit Todoist tasks, change the roadmap, send messages, apply to jobs, or change
-GitHub. End by stating that the plan is a draft awaiting review.
+GitHub. Never call a publication tool from a scheduled run. End by stating that
+the saved plan is a draft awaiting review in Hermes.

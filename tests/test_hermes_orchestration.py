@@ -5,6 +5,7 @@ import pytest
 
 from apps.hermes.server import mcp
 from personal_os.config import PersonalOSConfig
+from personal_os.domain.plans import PlanActionInput, PlanProposal
 from personal_os.ports.memory import MemoryRecordRef
 from personal_os.ports.reviews import ExecutionReviewSnapshot
 from personal_os.ports.search import SearchResponse, SearchSource
@@ -167,6 +168,31 @@ class FakeReviews:
         return (self.saved,) if self.saved else ()
 
 
+class FakePlans:
+    def __init__(self) -> None:
+        self.saved: PlanProposal | None = None
+
+    async def upsert_draft(self, proposal: PlanProposal):
+        version = (self.saved.version + 1) if self.saved else 1
+        self.saved = proposal.model_copy(
+            update={
+                "version": version,
+                "notion_page_id": "plan-page",
+                "notion_url": "https://notion.so/plan-page",
+            }
+        )
+        return self.saved
+
+    async def latest_draft(self):
+        return self.saved
+
+    async def get(self, proposal_key: str):
+        return self.saved if self.saved and self.saved.proposal_key == proposal_key else None
+
+    async def mark_published(self, proposal_key, task_ids, published_at):
+        raise AssertionError("draft tests must not publish")
+
+
 def _config() -> PersonalOSConfig:
     return PersonalOSConfig.model_validate(
         {
@@ -195,6 +221,7 @@ def _config() -> PersonalOSConfig:
                 "repository_catalog_data_source_id": "repos-db",
                 "decisions_data_source_id": "decisions-db",
                 "weekly_reviews_data_source_id": "reviews-db",
+                "plan_proposals_data_source_id": "plans-db",
             },
             "todoist": {"project_id": "todoist-project"},
             "github": {
@@ -217,6 +244,7 @@ def _orchestrator():
         FakeTasks(),
         FakeNotes(),
         FakeReviews(),
+        FakePlans(),
         clock=lambda: NOW,
     )
     return service, memory, search
@@ -321,7 +349,57 @@ def test_note_processing_is_bounded_to_ten_and_returns_review_drafts() -> None:
         asyncio.run(service.process_pending_notes(11))
 
 
-def test_mcp_surface_contains_no_consequential_write_tool() -> None:
+def test_plan_proposal_is_versioned_bounded_and_inert() -> None:
+    service, _, _ = _orchestrator()
+    actions = (
+        PlanActionInput(
+            content="Review one repository",
+            due_date=date(2026, 10, 7),
+            kind="core",
+        ),
+        PlanActionInput(
+            content="Revise interview notes",
+            due_date=date(2026, 10, 7),
+            kind="optional",
+        ),
+    )
+
+    first = asyncio.run(
+        service.save_plan_proposal(
+            date(2026, 10, 7), "daily", "Keep the day intentionally small.", actions
+        )
+    )
+    second = asyncio.run(
+        service.save_plan_proposal(
+            date(2026, 10, 7), "daily", "Revise after check-in.", actions
+        )
+    )
+    latest = asyncio.run(service.latest_plan_proposal())
+
+    assert first["proposal_key"] == "daily:2026-10-07"
+    assert first["version"] == 1
+    assert second["version"] == 2
+    assert latest["proposal"]["status"] == "Draft"
+    assert latest["proposal"]["approval_phrase"] == "APPROVE daily:2026-10-07"
+    assert "No Todoist task exists" in first["action_boundary"]
+
+
+def test_plan_proposal_rejects_excess_core_actions() -> None:
+    service, _, _ = _orchestrator()
+    actions = tuple(
+        PlanActionInput(content=f"Core {index}", due_date=date(2026, 10, 7))
+        for index in range(3)
+    )
+
+    with pytest.raises(ValueError, match="at most 2 core"):
+        asyncio.run(
+            service.save_plan_proposal(
+                date(2026, 10, 7), "daily", "Too much work.", actions
+            )
+        )
+
+
+def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
     tools = asyncio.run(mcp.list_tools())
     names = {tool.name for tool in tools}
 
@@ -333,5 +411,7 @@ def test_mcp_surface_contains_no_consequential_write_tool() -> None:
         "personal_os_task_progress",
         "personal_os_execution_review",
         "personal_os_save_execution_review_draft",
+        "personal_os_save_plan_proposal",
+        "personal_os_latest_plan_proposal",
         "personal_os_process_pending_notes",
     }

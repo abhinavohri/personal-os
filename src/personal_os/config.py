@@ -46,6 +46,7 @@ class NotionConfig(BaseModel):
     repository_catalog_data_source_id: str = Field(min_length=1)
     decisions_data_source_id: str = Field(min_length=1)
     weekly_reviews_data_source_id: str = Field(min_length=1)
+    plan_proposals_data_source_id: str = Field(min_length=1)
     notes_title_property: str = "Name"
 
 
