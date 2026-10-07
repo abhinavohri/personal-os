@@ -75,6 +75,30 @@ Focus support begins with declared focus blocks, plan-aware check-ins, and a
 Parking Lot for distracting ideas. Passive browser or app monitoring is an
 optional later feature with local-first telemetry and an obvious pause control.
 
+## Mixed resource inbox
+
+You can paste an unstructured mixture of book names, YouTube playlists,
+websites, roadmaps, broad topics, target jobs, courses, languages, bookmarks,
+papers, videos, or social posts into Hermes. Hermes normalizes up to 25 items per
+tool call and saves them to the Notion Resources inbox. Repeated URLs are
+deduplicated after tracking parameters and fragments are removed; items without
+URLs are matched by type and normalized title.
+
+Start Hermes and paste the dump naturally:
+
+```text
+Save these to my resource inbox. Do not plan them yet:
+- Designing Data-Intensive Applications
+- French, currently beginner level
+- https://example.com/roadmap
+- https://youtube.com/playlist?list=...
+```
+
+Hermes can show the inbox later and help group it into active learning tracks,
+career targets, or reference material. Capture itself never creates Todoist
+tasks. For browser or X bookmarks, paste URLs or an exported list for now;
+account-connected imports can be added separately if they are still useful.
+
 ## GitHub support
 
 GitHub is treated as evidence, not as the planning database. With an explicit
@@ -238,9 +262,9 @@ Hermes can catch up once after the gateway returns; inspect `hermes cron status`
 before relying on a missed run.
 
 The provider adapters, configuration boundary, authenticated mobile scan
-uploader, local note processor, bounded Hermes MCP tool server, recurring
-reviews, and approval-gated Todoist publication are implemented and covered by
-isolated tests.
+uploader, local note processor, mixed resource inbox, bounded Hermes MCP tool
+server, recurring reviews, and approval-gated Todoist publication are
+implemented and covered by isolated tests.
 
 Application code loads non-secret provider settings with
 `PersonalOSConfig.from_yaml("config/system.yaml")`, loads tokens with

@@ -90,6 +90,11 @@ DATABASES: dict[str, tuple[str, str, dict[str, Any]]] = {
                 {"name": "Active", "color": "blue"},
                 {"name": "Finished", "color": "green"},
             ]}},
+            "Resource Key": {"rich_text": {}},
+            "Notes": {"rich_text": {}},
+            "Tags": {"multi_select": {}},
+            "Source": {"select": {}},
+            "Added At": {"date": {}},
         },
     ),
     "repository_catalog_data_source_id": (

@@ -174,6 +174,16 @@ Revision should be retrieval-based: Hermes proposes questions, mock interviews,
 small implementation exercises, and spaced review dates from approved material.
 It must distinguish completed content from demonstrated understanding.
 
+### Resource intake before commitment
+
+The Resources database is a universal, deduplicated intake surface for books,
+playlists, websites, roadmaps, topics, target jobs, courses, languages,
+bookmarks, papers, videos, and social posts. URL-based keys remove common
+tracking parameters; resources without URLs use normalized type and title.
+Capturing an item does not activate a learning track or create a task. Hermes
+must first group and triage the inbox so reference material does not become an
+unbounded execution backlog.
+
 ## Web and browser acquisition
 
 Use the least fragile acquisition method that can access the source:

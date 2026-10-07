@@ -7,6 +7,7 @@ from personal_os.providers.gcs import GCSObjectStore
 from personal_os.providers.github import GitHubWorkEvidence
 from personal_os.providers.notion import NotionMemory
 from personal_os.providers.notion_repository_catalog import NotionRepositoryCatalog
+from personal_os.providers.notion_resources import NotionResourceInbox
 from personal_os.providers.notion_plans import NotionPlanStore
 from personal_os.providers.notion_reviews import NotionReviewStore
 from personal_os.providers.todoist import TodoistTaskStore
@@ -21,6 +22,7 @@ class AdapterSuite:
     object_store: GCSObjectStore
     memory: NotionMemory
     repository_catalog: NotionRepositoryCatalog
+    resources: NotionResourceInbox
     reviews: NotionReviewStore
     plans: NotionPlanStore
     tasks: TodoistTaskStore
@@ -31,6 +33,7 @@ class AdapterSuite:
     async def close(self) -> None:
         await self.memory.close()
         await self.repository_catalog.close()
+        await self.resources.close()
         await self.reviews.close()
         await self.plans.close()
         await self.tasks.close()
@@ -55,6 +58,10 @@ def build_adapters(config: PersonalOSConfig, secrets: RuntimeSecrets) -> Adapter
         repository_catalog=NotionRepositoryCatalog(
             secrets.notion_token,
             config.notion.repository_catalog_data_source_id,
+        ),
+        resources=NotionResourceInbox(
+            secrets.notion_token,
+            config.notion.resources_data_source_id,
         ),
         reviews=NotionReviewStore(
             secrets.notion_token,

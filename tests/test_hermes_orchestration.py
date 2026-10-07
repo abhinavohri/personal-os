@@ -7,6 +7,7 @@ import pytest
 from apps.hermes.server import mcp
 from personal_os.config import PersonalOSConfig
 from personal_os.domain.plans import PlanActionInput, PlanProposal
+from personal_os.domain.resources import ResourceCapture, ResourceRecord, resource_key
 from personal_os.ports.memory import MemoryRecordRef
 from personal_os.ports.reviews import ExecutionReviewSnapshot
 from personal_os.ports.search import SearchResponse, SearchSource
@@ -209,6 +210,28 @@ class FakePlans:
         return self.saved
 
 
+class FakeResources:
+    def __init__(self) -> None:
+        self.records: dict[str, ResourceRecord] = {}
+
+    async def upsert_many(self, resources):
+        result = []
+        for index, resource in enumerate(resources):
+            key = resource_key(resource)
+            record = ResourceRecord(
+                **resource.model_dump(),
+                resource_key=key,
+                notion_page_id=f"resource-{index}",
+                added_at=NOW,
+            )
+            self.records[key] = record
+            result.append(record)
+        return tuple(result)
+
+    async def list_inbox(self, limit=50):
+        return tuple(self.records.values())[:limit]
+
+
 def _config() -> PersonalOSConfig:
     return PersonalOSConfig.model_validate(
         {
@@ -261,6 +284,7 @@ def _orchestrator():
         FakeNotes(),
         FakeReviews(),
         FakePlans(),
+        FakeResources(),
         clock=lambda: NOW,
     )
     return service, memory, search
@@ -427,6 +451,7 @@ def test_plan_publication_requires_exact_phrase_and_is_receipted() -> None:
         FakeNotes(),
         FakeReviews(),
         plans,
+        FakeResources(),
         clock=lambda: NOW,
     )
     actions = (
@@ -458,6 +483,28 @@ def test_plan_publication_requires_exact_phrase_and_is_receipted() -> None:
     assert tasks.published[0][2][0].labels == ("personal-os",)
 
 
+def test_mixed_resource_dump_is_captured_without_becoming_tasks() -> None:
+    service, _, _ = _orchestrator()
+    items = (
+        ResourceCapture(title="French", resource_type="language", tags=("learning",)),
+        ResourceCapture(
+            title="Systems playlist",
+            resource_type="youtube_playlist",
+            url="https://youtube.com/playlist?list=abc&utm_source=x",
+            source="twitter_bookmark",
+        ),
+    )
+
+    captured = asyncio.run(service.capture_resources(items))
+    inbox = asyncio.run(service.resource_inbox())
+
+    assert captured["count"] == 2
+    assert captured["captured"][0]["resource_type"] == "language"
+    assert inbox["count"] == 2
+    assert "do not turn all" in captured["next_step"].lower()
+    assert "do not publish tasks" in inbox["triage_policy"]
+
+
 def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
     tools = asyncio.run(mcp.list_tools())
     names = {tool.name for tool in tools}
@@ -473,9 +520,15 @@ def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
         "personal_os_save_plan_proposal",
         "personal_os_latest_plan_proposal",
         "personal_os_publish_plan_proposal",
+        "personal_os_capture_resources",
+        "personal_os_resource_inbox",
         "personal_os_process_pending_notes",
     }
     save_tool = next(
         tool for tool in tools if tool.name == "personal_os_save_plan_proposal"
     )
     assert "$ref" not in json.dumps(save_tool.input_schema)
+    capture_tool = next(
+        tool for tool in tools if tool.name == "personal_os_capture_resources"
+    )
+    assert "$ref" not in json.dumps(capture_tool.input_schema)

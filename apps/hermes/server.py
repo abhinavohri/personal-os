@@ -14,6 +14,7 @@ from mcp.server.mcpserver import Context
 from personal_os.composition import AdapterSuite, build_adapters
 from personal_os.config import PersonalOSConfig, RuntimeSecrets
 from personal_os.domain.plans import PlanActionInput
+from personal_os.domain.resources import ResourceCapture
 from personal_os.services.extract_note import PaperNoteExtractor
 from personal_os.services.hermes_orchestration import HermesOrchestrator
 from personal_os.services.process_notes import PaperNoteProcessor
@@ -52,6 +53,7 @@ async def app_lifespan(_: MCPServer) -> AsyncIterator[AppContext]:
         note_processor,
         adapters.reviews,
         adapters.plans,
+        adapters.resources,
     )
     try:
         yield AppContext(adapters=adapters, orchestrator=orchestrator)
@@ -74,6 +76,9 @@ mcp = MCPServer(
         "Only call personal_os_publish_plan_proposal when the user has typed the exact approval "
         "phrase for that proposal in the current interactive conversation. Never call it from "
         "a scheduled job or infer approval from general agreement. "
+        "When the user pastes a mixed brain dump of books, links, playlists, topics, jobs, "
+        "courses, languages, or bookmarks, normalize it and call personal_os_capture_resources "
+        "in batches of at most 25. Capture is not commitment: do not schedule every inbox item. "
         "For portfolio gaps, first consider a coherent feature addition to a relevant existing "
         "project; suggest a new project only when the gap does not credibly belong in existing "
         "work."
@@ -196,6 +201,29 @@ async def personal_os_publish_plan_proposal(
         proposal_key,
         approval_phrase,
     )
+
+
+@mcp.tool()
+async def personal_os_capture_resources(
+    items: list[dict[str, object]],
+    ctx: Context[AppContext],
+) -> dict[str, object]:
+    """Capture up to 25 items. Use title plus resource_type: book, youtube_playlist,
+    website, roadmap, topic, target_job, course, language, bookmark, social_post,
+    paper, video, or other. Optional fields: url, notes, tags, and source (manual,
+    browser_bookmark, twitter_bookmark, paper_note, web_research, or import).
+    """
+    return await _orchestrator(ctx).capture_resources(
+        tuple(ResourceCapture.model_validate(item) for item in items)
+    )
+
+
+@mcp.tool()
+async def personal_os_resource_inbox(
+    ctx: Context[AppContext], limit: int = 50
+) -> dict[str, object]:
+    """Read the Notion resource inbox for later grouping and deliberate triage."""
+    return await _orchestrator(ctx).resource_inbox(limit)
 
 
 @mcp.tool()

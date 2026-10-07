@@ -15,9 +15,11 @@ from personal_os.domain.plans import (
     PlanProposal,
     validate_daily_shape,
 )
+from personal_os.domain.resources import ResourceCapture, ResourceRecord
 from personal_os.ports.memory import DurableMemory
 from personal_os.ports.plans import PlanProposalStore
 from personal_os.ports.reviews import ExecutionReviewSnapshot, ReviewStore
+from personal_os.ports.resources import ResourceInbox
 from personal_os.ports.search import WebSearch
 from personal_os.ports.tasks import TaskDraft, TaskRecord, TaskStore
 from personal_os.ports.work_evidence import WorkEvidence
@@ -53,6 +55,7 @@ class HermesOrchestrator:
         note_processor: PendingNoteProcessor,
         reviews: ReviewStore,
         plans: PlanProposalStore,
+        resources: ResourceInbox,
         *,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
@@ -64,6 +67,7 @@ class HermesOrchestrator:
         self._note_processor = note_processor
         self._reviews = reviews
         self._plans = plans
+        self._resources = resources
         self._clock = clock or (lambda: datetime.now(UTC))
         self._context_pages = {
             "agent_brief": config.notion.agent_brief_page_id,
@@ -503,6 +507,36 @@ class HermesOrchestrator:
             "message": "Approved actions were published to Todoist exactly once.",
         }
 
+    async def capture_resources(
+        self, items: tuple[ResourceCapture, ...]
+    ) -> dict[str, object]:
+        """Store a mixed brain dump without prematurely scheduling every item."""
+        if not 1 <= len(items) <= 25:
+            raise ValueError("items must contain between 1 and 25 resources")
+        records = await self._resources.upsert_many(items)
+        return {
+            "captured": [_resource_payload(record) for record in records],
+            "count": len(records),
+            "next_step": (
+                "These items are in the Notion Resources inbox. Do not turn all of them into "
+                "tasks. During triage, group related items, choose active learning tracks or "
+                "career targets, and leave the rest as reference material."
+            ),
+        }
+
+    async def resource_inbox(self, limit: int = 50) -> dict[str, object]:
+        """Read recently captured resources awaiting deliberate triage."""
+        records = await self._resources.list_inbox(limit)
+        return {
+            "resources": [_resource_payload(record) for record in records],
+            "count": len(records),
+            "triage_policy": (
+                "Separate active commitments from references. Recommend at most one primary "
+                "Build track, one slow Reading track, and one bounded Open exploration; do not "
+                "publish tasks or change the roadmap without approval."
+            ),
+        }
+
     async def process_pending_notes(self, limit: int = 10) -> dict[str, object]:
         """Process scans into extraction artifacts and Notion review drafts."""
         if not 1 <= limit <= 10:
@@ -562,4 +596,20 @@ def _plan_payload(proposal: PlanProposal) -> dict[str, object]:
             "Draft only. No Todoist task exists until the user gives the exact approval "
             "phrase in an interactive Hermes conversation. Scheduled jobs must never approve."
         ),
+    }
+
+
+def _resource_payload(record: ResourceRecord) -> dict[str, object]:
+    return {
+        "resource_key": record.resource_key,
+        "title": record.title,
+        "resource_type": record.resource_type,
+        "url": record.url,
+        "notes": record.notes,
+        "tags": list(record.tags),
+        "source": record.source,
+        "status": record.status,
+        "notion_page_id": record.notion_page_id,
+        "notion_url": record.notion_url,
+        "added_at": record.added_at.isoformat() if record.added_at else None,
     }
