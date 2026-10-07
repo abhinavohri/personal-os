@@ -7,7 +7,10 @@ from personal_os.domain.resources import ResourceCapture, ResourceRecord
 
 class ResourceInbox(Protocol):
     async def upsert_many(
-        self, resources: tuple[ResourceCapture, ...]
+        self,
+        resources: tuple[ResourceCapture, ...],
+        *,
+        replace_tags: bool = False,
     ) -> tuple[ResourceRecord, ...]: ...
 
     async def list_inbox(self, limit: int = 100) -> tuple[ResourceRecord, ...]: ...

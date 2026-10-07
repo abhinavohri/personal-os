@@ -48,7 +48,10 @@ class NotionResourceInbox:
         )
 
     async def upsert_many(
-        self, resources: tuple[ResourceCapture, ...]
+        self,
+        resources: tuple[ResourceCapture, ...],
+        *,
+        replace_tags: bool = False,
     ) -> tuple[ResourceRecord, ...]:
         if not 1 <= len(resources) <= 25:
             raise ValueError("resources must contain between 1 and 25 items")
@@ -64,11 +67,15 @@ class NotionResourceInbox:
                     update={
                         "url": resource.url or (current.url if current else None),
                         "notes": resource.notes or (current.notes if current else ""),
-                        "tags": tuple(
-                            dict.fromkeys(
-                                (*((current.tags if current else ())), *resource.tags)
-                            )
-                        )[:10],
+                        "tags": (
+                            resource.tags
+                            if replace_tags
+                            else tuple(
+                                dict.fromkeys(
+                                    (*((current.tags if current else ())), *resource.tags)
+                                )
+                            )[:10]
+                        ),
                     }
                 )
                 properties = _properties(

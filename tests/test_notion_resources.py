@@ -99,6 +99,37 @@ def test_existing_resource_preserves_status_and_merges_tags() -> None:
     ]
 
 
+def test_importer_can_replace_generated_tags_without_changing_status() -> None:
+    patched: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if request.method == "GET":
+            return httpx.Response(200, json={"properties": _schema()})
+        if request.method == "POST" and path.endswith("/query"):
+            return httpx.Response(
+                200, json={"results": [_page(status="Active", tags=("uncategorized",))]}
+            )
+        if request.method == "PATCH" and path == "/v1/pages/resource-page":
+            patched.update(json.loads(request.content)["properties"])
+            return httpx.Response(200, json=_page(status="Active", tags=("general-cs",)))
+        raise AssertionError((request.method, path))
+
+    async def run():
+        client = _client(handler)
+        store = NotionResourceInbox("token", "resources", client=client, clock=lambda: NOW)
+        updated = ITEM.model_copy(update={"tags": ("general-cs",)})
+        records = await store.upsert_many((updated,), replace_tags=True)
+        await client.aclose()
+        return records
+
+    records = asyncio.run(run())
+    assert records[0].status == "Active"
+    assert [item["name"] for item in patched["Tags"]["multi_select"]] == [
+        "general-cs"
+    ]
+
+
 def test_inbox_follows_cursor_pagination_beyond_one_hundred() -> None:
     calls = 0
 

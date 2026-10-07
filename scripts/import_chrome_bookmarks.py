@@ -43,7 +43,10 @@ async def run(args: argparse.Namespace) -> None:
     saved = 0
     try:
         for offset in range(0, len(resources), 25):
-            records = await store.upsert_many(resources[offset : offset + 25])
+            records = await store.upsert_many(
+                resources[offset : offset + 25],
+                replace_tags=True,
+            )
             saved += len(records)
     finally:
         await store.close()
