@@ -165,15 +165,15 @@ async def personal_os_save_plan_proposal(
     plan_date: date,
     cadence: Literal["daily", "weekly"],
     rationale: str,
-    actions: list[PlanActionInput],
+    actions: list[dict[str, object]],
     ctx: Context[AppContext],
 ) -> dict[str, object]:
-    """Save or revise a bounded plan proposal; this never creates Todoist tasks."""
+    """Save a bounded draft. Actions need content, due_date, kind, description, labels."""
     return await _orchestrator(ctx).save_plan_proposal(
         plan_date,
         cadence,
         rationale,
-        tuple(actions),
+        tuple(PlanActionInput.model_validate(action) for action in actions),
     )
 
 

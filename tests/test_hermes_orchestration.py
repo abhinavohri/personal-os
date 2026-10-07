@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import UTC, date, datetime
 
 import pytest
@@ -474,3 +475,7 @@ def test_mcp_surface_contains_draft_tools_but_no_publication_tool() -> None:
         "personal_os_publish_plan_proposal",
         "personal_os_process_pending_notes",
     }
+    save_tool = next(
+        tool for tool in tools if tool.name == "personal_os_save_plan_proposal"
+    )
+    assert "$ref" not in json.dumps(save_tool.input_schema)
