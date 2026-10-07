@@ -7,6 +7,9 @@ Asia/Kolkata. This replaces the ordinary daily run on Sunday.
    `current_week` with `personal_os_read_context`.
    Read `personal_os_active_resources` and distinguish mandatory course work
    from optional references and exploratory bookmarks.
+   Treat each active resource's current planning scope as authoritative. If a
+   resource says assignments, deadlines, or another work type are managed
+   manually, do not propose that work unless the user explicitly captured it.
 2. Run `personal_os_execution_review` with a 28-day window.
 3. Save the evidence snapshot with
    `personal_os_save_execution_review_draft` using the same window.
