@@ -50,10 +50,14 @@ searchable extracted record and agent memory.
 Low-confidence handwriting, material roadmap changes, and generated tasks are
 drafts until the user approves them.
 
+### Adaptive reviews run before the day begins
+
+Hermes prepares a draft at 03:00 Asia/Kolkata from Monday through Saturday. A
+deeper weekly review replaces the daily run at 03:00 on Sunday. Both jobs use
+observed execution rather than a user estimate of available hours, and both
+remain draft-only until the user approves consequential changes.
+
 ## Pending
 
-- GCP project identifier and bucket location.
-- Vertex AI model identifiers available to the project.
-- Web-search provider.
-- Weekly review day, time, and delivery surface.
-- GitHub repository allowlist and private-repository policy.
+- The exact approval experience for publishing proposed plans to Todoist and
+  applying material roadmap changes.

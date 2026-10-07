@@ -142,6 +142,11 @@ decisions. Hermes drafts a review and a revised next plan using observed
 execution as its capacity signal. Material roadmap changes and newly extracted
 tasks require user approval.
 
+The default schedule prepares a daily draft at 03:00 Asia/Kolkata from Monday
+through Saturday. A deeper review replaces it at 03:00 on Sunday, avoiding two
+concurrent planners. Scheduled output remains a proposal; no task or roadmap
+mutation occurs merely because the job ran.
+
 ## Career and learning
 
 The same planning loop supports employment, courses, books, and formal study:

@@ -194,6 +194,35 @@ is placed in its configuration. Start it from this repository with
 `hermes --in "$PWD"` so its terminal and code-review tools are scoped to the
 project you intend to work on.
 
+### Scheduled adaptive reviews
+
+The primary setup uses `Asia/Kolkata` explicitly:
+
+- Monday–Saturday at 3:00 AM: prepare the upcoming waking day's draft.
+- Sunday at 3:00 AM: run the deeper weekly review instead of the daily job.
+
+The versioned prompts are in `prompts/daily-plan.md` and
+`prompts/weekly-review.md`. Results are stored locally under
+`~/.hermes/cron/output/`, while comparable evidence metrics are saved as
+idempotent Draft rows in Notion Weekly Reviews. Neither job publishes Todoist
+tasks or changes the roadmap.
+
+Useful commands:
+
+```bash
+hermes gateway status
+hermes cron list --all
+hermes cron run JOB_ID
+hermes cron runs JOB_ID --limit 10
+hermes cron pause JOB_ID
+hermes cron resume JOB_ID
+```
+
+The macOS user gateway starts at login and restarts after crashes. The Mac must
+be powered on and able to run the user service at 3:00 AM. If it is unavailable,
+Hermes can catch up once after the gateway returns; inspect `hermes cron status`
+before relying on a missed run.
+
 The provider adapters, configuration boundary, authenticated mobile scan
 uploader, local note processor, and bounded Hermes MCP tool server are
 implemented and covered by isolated tests. Hermes host installation, recurring
